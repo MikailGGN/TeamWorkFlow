@@ -93,6 +93,7 @@ export default function CreateTeam() {
     smartCashAccount: "",
     location: undefined,
     photo: undefined,
+    teamId: ""
   });
 
   const [selectedCanvassers, setSelectedCanvassers] = useState<string[]>([]);
@@ -173,6 +174,11 @@ export default function CreateTeam() {
   const { data: canvassers = [], isLoading: canvassersLoading } = useQuery({
     queryKey: ["/api/profiles/canvassers"],
     enabled: false // We'll implement this API later
+  });
+
+  // Fetch created teams for selection
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
+    queryKey: ["/api/teams"],
   });
 
   const createTeamMutation = useMutation({
@@ -638,6 +644,36 @@ export default function CreateTeam() {
                           placeholder="Enter SmartCash account"
                           className="mt-1"
                         />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="team" className="text-sm font-medium text-gray-700">
+                          Assign to Team *
+                        </Label>
+                        <Select
+                          value={canvasserForm.teamId}
+                          onValueChange={(value) => handleCanvasserInputChange("teamId", value)}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select a team" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teamsLoading ? (
+                              <SelectItem value="loading" disabled>Loading teams...</SelectItem>
+                            ) : teams.length === 0 ? (
+                              <SelectItem value="no-teams" disabled>No teams available</SelectItem>
+                            ) : (
+                              teams.map((team: any) => (
+                                <SelectItem key={team.id} value={team.id.toString()}>
+                                  {team.name} - {team.activityType}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Select the team this canvasser will be assigned to
+                        </p>
                       </div>
 
                       {/* Photo Upload */}

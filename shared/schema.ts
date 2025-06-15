@@ -134,6 +134,7 @@ export const canvasserRegistrationSchema = z.object({
     address: z.string().optional(),
   }).optional(),
   photo: z.string().optional(),
+  teamId: z.string().min(1, "Team selection is required")
 });
 
 export type User = typeof users.$inferSelect;
