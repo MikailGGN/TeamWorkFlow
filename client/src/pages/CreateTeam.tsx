@@ -236,6 +236,7 @@ export default function CreateTeam() {
       smartCashAccount: "",
       location: undefined,
       photo: undefined,
+      teamId: ""
     });
     setMapPosition(null);
     setPhotoPreview(null);
@@ -287,19 +288,57 @@ export default function CreateTeam() {
     }
   };
 
+  // LocalStorage functions for canvasser management
+  const saveCanvasserToStorage = (canvasserData: any) => {
+    const existingCanvassers = JSON.parse(localStorage.getItem('capturedCanvassers') || '[]');
+    const updatedCanvassers = [...existingCanvassers, canvasserData];
+    localStorage.setItem('capturedCanvassers', JSON.stringify(updatedCanvassers));
+  };
+
+  const getStoredCanvassers = () => {
+    return JSON.parse(localStorage.getItem('capturedCanvassers') || '[]');
+  };
+
   const handleCanvasserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const registrationData: CanvasserRegistration = {
+    if (!canvasserForm.fullName || !canvasserForm.phone || !canvasserForm.nin || !canvasserForm.teamId) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields including team selection.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get selected team details
+    const selectedTeam = (teams as any[]).find(team => team.id.toString() === canvasserForm.teamId);
+    
+    const registrationData = {
       ...canvasserForm,
+      id: `canvasser_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      status: 'pending',
+      teamName: selectedTeam?.name || 'Unknown Team',
+      teamId: canvasserForm.teamId,
       location: mapPosition ? {
         lat: mapPosition[0],
         lng: mapPosition[1],
         address: `${mapPosition[0].toFixed(6)}, ${mapPosition[1].toFixed(6)}`
-      } : undefined
+      } : undefined,
+      photo: photoPreview || undefined
     };
 
-    registerCanvasser.mutate(registrationData);
+    // Save to localStorage as "captured canvasser"
+    saveCanvasserToStorage(registrationData);
+    
+    toast({
+      title: "Canvasser Registered",
+      description: `${canvasserForm.fullName} has been registered and is pending approval.`,
+    });
+
+    // Reset form
+    resetCanvasserForm();
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -7,7 +7,8 @@ import {
   UserCog, 
   TrendingUp,
   LogOut,
-  User
+  User,
+  UserCheck
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 

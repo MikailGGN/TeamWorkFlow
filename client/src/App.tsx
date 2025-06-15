@@ -11,6 +11,7 @@ import AttendanceLog from "@/pages/AttendanceLog";
 import TeamManagement from "@/pages/TeamManagement";
 import UserManagement from "@/pages/UserManagement";
 import GadsReporting from "@/pages/GadsReporting";
+import CanvasserApproval from "@/pages/CanvasserApproval";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -64,6 +65,8 @@ function Router() {
       <Route path="/TeamManagement" component={() => <ProtectedRoute component={TeamManagement} />} />
       <Route path="/users" component={() => <ProtectedRoute component={UserManagement} />} />
       <Route path="/UserManagement" component={() => <ProtectedRoute component={UserManagement} />} />
+      <Route path="/canvasser-approval" component={() => <ProtectedRoute component={CanvasserApproval} />} />
+      <Route path="/CanvasserApproval" component={() => <ProtectedRoute component={CanvasserApproval} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route path="/GadsReporting" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route component={NotFound} />
