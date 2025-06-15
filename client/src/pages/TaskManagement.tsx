@@ -6,20 +6,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { TableLoading } from "@/components/ui/loading";
-import { Plus, Edit, Trash2, Clock, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Edit, Trash2, Clock, AlertCircle, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Task, InsertTask, Team } from "@shared/schema";
+import { Task, InsertTask, Team, ActivityPlanner, InsertActivityPlanner, Employee } from "@shared/schema";
+import { format } from "date-fns";
+
+const ACTIVITY_TYPES = [
+  { value: 'Mega Activation', label: 'Mega Activation', color: '#ffb6c1' },
+  { value: 'Mini Activation', label: 'Mini Activation', color: '#87cefa' },
+  { value: 'New Site Activation', label: 'New Site Activation', color: '#90ee90' },
+  { value: 'New Site Launch', label: 'New Site Launch', color: '#ffa500' },
+  { value: 'Service Camp', label: 'Service Camp', color: '#da70d6' }
+];
 
 export default function TaskManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   
   const [formData, setFormData] = useState({
     title: "",
@@ -31,12 +47,28 @@ export default function TaskManagement() {
     dueDate: ""
   });
 
+  const [activityFormData, setActivityFormData] = useState({
+    location: "",
+    activity: "",
+    notes: "",
+    date: "",
+    userEmail: ""
+  });
+
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
 
   const { data: teams } = useQuery<Team[]>({
     queryKey: ["/api/teams"],
+  });
+
+  const { data: employees } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+  });
+
+  const { data: activityPlans } = useQuery<ActivityPlanner[]>({
+    queryKey: ["/api/activity-planner", currentMonth, currentYear],
   });
 
   const createTaskMutation = useMutation({
