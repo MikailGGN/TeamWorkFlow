@@ -23,6 +23,15 @@ const authenticateToken = async (req: AuthRequest, res: any, next: any) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    // Handle employee authentication (FAE, ADMIN)
+    if (decoded.type === 'employee') {
+      req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+      next();
+      return;
+    }
+    
+    // Handle regular user authentication
     const user = await storage.getUser(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'Invalid token' });
@@ -156,6 +165,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Protected routes
   app.get("/api/user/profile", authenticateToken, async (req: AuthRequest, res) => {
+    // Handle employee profile requests
+    if (req.user!.id && typeof req.user!.id === 'string' && req.user!.id.startsWith('fae-') || req.user!.id.startsWith('admin-')) {
+      return res.json({
+        id: req.user!.id,
+        email: req.user!.email,
+        name: req.user!.id.startsWith('fae-') ? 'John Doe - Field Area Executive' : 'Jane Smith - Administrator',
+        role: req.user!.role,
+        type: 'employee'
+      });
+    }
+    
     const user = await storage.getUser(req.user!.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
