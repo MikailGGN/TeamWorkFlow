@@ -38,30 +38,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/signin", async (req, res) => {
     try {
+      console.log("Login attempt for:", req.body?.email);
       const { email, password } = signInSchema.parse(req.body);
       
       // First check if user is an employee in Supabase public.employees table
-      const employee = await supabaseStorage.getEmployeeByEmail(email);
-      if (employee && employee.status === 'active') {
-        // For employees, we don't store passwords in our system
-        // This is a simplified auth - in production you'd integrate with Supabase Auth
-        const token = jwt.sign(
-          { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
+      try {
+        const employee = await supabaseStorage.getEmployeeByEmail(email);
+        console.log("Employee found:", employee?.email, employee?.role);
+        
+        if (employee && employee.status === 'active') {
+          // For employees, we don't store passwords in our system
+          // This is a simplified auth - in production you'd integrate with Supabase Auth
+          const token = jwt.sign(
+            { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+          );
 
-        return res.json({
-          token,
-          user: {
-            id: employee.id,
-            email: employee.email,
-            name: employee.fullName,
-            role: employee.role,
-            type: 'employee'
-          },
-          redirectTo: employee.role === 'FAE' ? '/create-team' : '/dashboard'
-        });
+          return res.json({
+            token,
+            user: {
+              id: employee.id,
+              email: employee.email,
+              name: employee.fullName,
+              role: employee.role,
+              type: 'employee'
+            },
+            redirectTo: employee.role === 'FAE' ? '/create-team' : '/dashboard'
+          });
+        }
+      } catch (dbError) {
+        console.log("Database connection issue, falling back to local user auth");
       }
 
       // Fallback to regular user authentication for admin users
@@ -93,7 +100,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         redirectTo: '/dashboard'
       });
     } catch (error) {
-      res.status(400).json({ message: "Invalid request data" });
+      console.error("Sign in error:", error);
+      res.status(400).json({ message: "Invalid request data", details: error.message });
     }
   });
 

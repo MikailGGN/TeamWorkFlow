@@ -49,8 +49,8 @@ export function SignIn() {
             <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
               <BarChart3 className="text-white text-2xl w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Enterprise Dashboard</h1>
-            <p className="text-slate-600 mt-2">Sign in to your account</p>
+            <h1 className="text-2xl font-bold text-slate-900">Team Management System</h1>
+            <p className="text-slate-600 mt-2">Sign in to access field operations</p>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
