@@ -436,7 +436,7 @@ const DailyPerformance: React.FC = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={editingRecord.others}
+                              value={editingRecord?.others || 0}
                               onChange={(e) => setEditingRecord(prev => prev ? { ...prev, others: parseInt(e.target.value) || 0 } : null)}
                               className="w-20 mx-auto"
                             />
