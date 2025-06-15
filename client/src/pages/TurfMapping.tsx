@@ -16,7 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Trash2, Edit, Save, MapPin, Users, Calendar } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Trash2, Edit, Save, MapPin, Users, Calendar, Info, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Type definitions
@@ -207,6 +209,7 @@ export default function TurfMapping() {
   const [selectedTerritory, setSelectedTerritory] = useState<Territory | null>(null);
   const [editingTerritory, setEditingTerritory] = useState<Territory | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showHelpGuide, setShowHelpGuide] = useState(false);
 
   // Fetch turfs from database
   const { data: turfsData = [], isLoading } = useQuery({
@@ -372,8 +375,81 @@ export default function TurfMapping() {
             <MapPin className="h-3 w-3" />
             {territories.length} Territories
           </Badge>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowHelpGuide(!showHelpGuide)}
+            className="flex items-center gap-2"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Usage Guide
+          </Button>
         </div>
       </div>
+
+      {/* Usage Guide */}
+      <Collapsible open={showHelpGuide} onOpenChange={setShowHelpGuide}>
+        <CollapsibleContent>
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-3">
+                <div className="font-semibold text-blue-900">How to use Territory Mapping:</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="font-medium text-blue-800 mb-1">📍 Creating Territories:</div>
+                    <ul className="space-y-1 text-blue-700">
+                      <li>• Use polygon tool for irregular areas</li>
+                      <li>• Use rectangle tool for structured zones</li>
+                      <li>• Click points to create polygon boundaries</li>
+                      <li>• Double-click to finish drawing</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-medium text-blue-800 mb-1">⚙️ Managing Territories:</div>
+                    <ul className="space-y-1 text-blue-700">
+                      <li>• Click territory to select and view details</li>
+                      <li>• Edit name, description, and assignments</li>
+                      <li>• Assign territories to teams for operations</li>
+                      <li>• Track status: Active, Inactive, Completed</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-medium text-blue-800 mb-1">📊 Territory Status:</div>
+                    <ul className="space-y-1 text-blue-700">
+                      <li>• <span className="text-green-600">Active:</span> Currently being worked</li>
+                      <li>• <span className="text-yellow-600">Inactive:</span> Paused or on hold</li>
+                      <li>• <span className="text-blue-600">Completed:</span> Finished operations</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-medium text-blue-800 mb-1">💡 Pro Tips:</div>
+                    <ul className="space-y-1 text-blue-700">
+                      <li>• Use different colors to categorize territories</li>
+                      <li>• Add detailed descriptions for team guidance</li>
+                      <li>• Monitor analytics to track progress</li>
+                      <li>• Delete territories using the trash icon</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Quick Start Hint for New Users */}
+      {territories.length === 0 && !isLoading && (
+        <Alert className="mb-6 bg-green-50 border-green-200">
+          <MapPin className="h-4 w-4" />
+          <AlertDescription>
+            <div className="font-medium text-green-800 mb-1">Getting Started</div>
+            <div className="text-green-700 text-sm">
+              Start by creating your first territory using the drawing tools on the map. Use the <strong>polygon tool</strong> for custom shapes or <strong>rectangle tool</strong> for simple rectangular areas. Click the map to begin drawing!
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="map" className="space-y-4">
         <TabsList>
@@ -392,8 +468,26 @@ export default function TurfMapping() {
                     Territory Map
                   </CardTitle>
                   <CardDescription>
-                    Use the drawing tools to create new territories. Click on existing territories to select them.
+                    Use the drawing tools below the map to create territories. Click territories to select and manage them.
                   </CardDescription>
+                  {territories.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="text-xs text-muted-foreground flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <div className="w-3 h-3 border-2 border-green-500 bg-green-100"></div>
+                          Active
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <div className="w-3 h-3 border-2 border-yellow-500 bg-yellow-100 border-dashed"></div>
+                          Inactive
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <div className="w-3 h-3 border-2 border-blue-500 bg-blue-200"></div>
+                          Completed
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <MapComponent
@@ -409,10 +503,44 @@ export default function TurfMapping() {
             </div>
 
             <div className="space-y-4">
+              {!selectedTerritory && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      How to Use
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="font-medium text-blue-800 mb-2">Drawing Tools:</div>
+                      <ul className="space-y-1 text-blue-700">
+                        <li>🔷 Rectangle: Click and drag for square areas</li>
+                        <li>🔶 Polygon: Click points, double-click to finish</li>
+                        <li>✏️ Edit: Modify existing territory shapes</li>
+                        <li>🗑️ Delete: Remove unwanted territories</li>
+                      </ul>
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <div className="font-medium text-green-800 mb-2">Territory Management:</div>
+                      <ul className="space-y-1 text-green-700">
+                        <li>• Click any territory to view details</li>
+                        <li>• Edit names and descriptions</li>
+                        <li>• Assign territories to teams</li>
+                        <li>• Track completion status</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               {selectedTerritory && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Territory Details</CardTitle>
+                    <CardDescription className="text-xs">
+                      Click "Edit" to modify territory information
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
