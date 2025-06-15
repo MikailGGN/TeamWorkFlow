@@ -628,6 +628,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get employees
+  app.get("/api/employees", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      res.status(500).json({ error: "Failed to fetch employees" });
+    }
+  });
+
+  // Get activity planner data
+  app.get("/api/activity-planner", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      // Since we're using in-memory storage, we'll return mock data for demonstration
+      const mockActivityPlans = [
+        {
+          id: 1,
+          date: "2025-06-15",
+          location: "Central Mall",
+          activity: "Mega Activation",
+          notes: "Special promotion event",
+          userEmail: "admin@company.com",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: 2,
+          date: "2025-06-18",
+          location: "Downtown Plaza",
+          activity: "Mini Activation",
+          notes: "Weekend outreach",
+          userEmail: "admin@company.com",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+      res.json(mockActivityPlans);
+    } catch (error) {
+      console.error("Error fetching activity plans:", error);
+      res.status(500).json({ error: "Failed to fetch activity plans" });
+    }
+  });
+
+  // Create activity plan
+  app.post("/api/activity-planner", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const activityData = req.body as any;
+      
+      // For demonstration, we'll return success with mock data
+      const newActivity = {
+        id: Math.floor(Math.random() * 1000),
+        ...activityData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      res.json(newActivity);
+    } catch (error) {
+      console.error("Error creating activity plan:", error);
+      res.status(500).json({ error: "Failed to create activity plan" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
