@@ -125,6 +125,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forgot password route
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Check if email exists in users or employees
+      const user = await storage.getUserByEmail(email);
+      const demoEmployees = [
+        { id: 'fae-001', email: 'fae@company.com', fullName: 'John Doe - Field Area Executive', role: 'FAE' },
+        { id: 'admin-001', email: 'admin@company.com', fullName: 'Jane Smith - Administrator', role: 'ADMIN' }
+      ];
+      const employee = demoEmployees.find(emp => emp.email === email);
+
+      if (!user && !employee) {
+        // For security, always return success even if email doesn't exist
+        return res.json({ message: "If this email exists, a reset link has been sent" });
+      }
+
+      // Generate reset token
+      const resetToken = jwt.sign(
+        { email, type: 'password_reset' },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      // In production, you would send an email here
+      console.log(`Password reset link for ${email}: /reset-password?token=${resetToken}`);
+
+      res.json({ 
+        message: "Password reset link sent successfully",
+        // In development, include the token for testing
+        ...(process.env.NODE_ENV === 'development' && { resetToken })
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Reset password route
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword, confirmPassword } = req.body;
+
+      if (!token || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+
+      // Verify reset token
+      let decoded;
+      try {
+        decoded = jwt.verify(token, JWT_SECRET) as any;
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      if (decoded.type !== 'password_reset') {
+        return res.status(400).json({ message: "Invalid reset token" });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update user password
+      const user = await storage.getUserByEmail(decoded.email);
+      if (user) {
+        await storage.updateUser(user.id, { password: hashedPassword });
+        console.log(`Password updated for user: ${decoded.email}`);
+      } else {
+        // Handle employee password update (in real implementation, this would update the employee table)
+        console.log(`Password reset requested for employee: ${decoded.email} (not implemented in demo)`);
+      }
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
