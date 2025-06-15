@@ -40,6 +40,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = signInSchema.parse(req.body);
       
+      // First check if user is an employee in Supabase public.employees table
+      const employee = await supabaseStorage.getEmployeeByEmail(email);
+      if (employee && employee.status === 'active') {
+        // For employees, we don't store passwords in our system
+        // This is a simplified auth - in production you'd integrate with Supabase Auth
+        const token = jwt.sign(
+          { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          token,
+          user: {
+            id: employee.id,
+            email: employee.email,
+            name: employee.fullName,
+            role: employee.role,
+            type: 'employee'
+          },
+          redirectTo: employee.role === 'FAE' ? '/create-team' : '/dashboard'
+        });
+      }
+
+      // Fallback to regular user authentication for admin users
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -51,7 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
+        { id: user.id, email: user.email, role: user.role, type: 'user' },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -62,8 +87,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
-        }
+          role: user.role,
+          type: 'user'
+        },
+        redirectTo: '/dashboard'
       });
     } catch (error) {
       res.status(400).json({ message: "Invalid request data" });
@@ -238,6 +265,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(attendance);
     } catch (error) {
       res.status(400).json({ message: "Invalid attendance data" });
+    }
+  });
+
+  // Seed employees endpoint (for testing)
+  app.post("/api/seed/employees", async (req, res) => {
+    try {
+      // Create sample FAE and admin employees
+      const sampleEmployees = [
+        {
+          email: "fae@company.com",
+          fullName: "John Doe - Field Area Executive",
+          role: "FAE",
+          department: "Field Operations",
+          phone: "+234-800-123-4567",
+          status: "active"
+        },
+        {
+          email: "admin@company.com", 
+          fullName: "Jane Smith - Administrator",
+          role: "ADMIN",
+          department: "Administration",
+          phone: "+234-800-987-6543",
+          status: "active"
+        },
+        {
+          email: "supervisor@company.com",
+          fullName: "Mike Johnson - Supervisor",
+          role: "SUPERVISOR", 
+          department: "Operations",
+          phone: "+234-800-555-0123",
+          status: "active"
+        }
+      ];
+
+      const createdEmployees = [];
+      for (const emp of sampleEmployees) {
+        // Check if employee already exists
+        const existing = await supabaseStorage.getEmployeeByEmail(emp.email);
+        if (!existing) {
+          const created = await supabaseStorage.createEmployee(emp);
+          createdEmployees.push(created);
+        }
+      }
+
+      res.json({ 
+        message: "Employee data seeded successfully",
+        created: createdEmployees.length,
+        employees: createdEmployees
+      });
+    } catch (error) {
+      console.error("Error seeding employees:", error);
+      res.status(500).json({ message: "Failed to seed employee data" });
     }
   });
 

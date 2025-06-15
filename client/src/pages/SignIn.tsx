@@ -23,7 +23,9 @@ export function SignIn() {
     const result = await authManager.signIn(email, password);
     
     if (result.success) {
-      setLocation("/dashboard");
+      // Redirect based on user role and redirectTo response
+      const redirectPath = result.redirectTo || "/dashboard";
+      setLocation(redirectPath);
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",

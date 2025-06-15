@@ -35,7 +35,7 @@ class AuthManager {
     }
   }
 
-  async signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+  async signIn(email: string, password: string): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
     try {
       const response = await fetch('/api/auth/signin', {
         method: 'POST',
@@ -50,7 +50,7 @@ class AuthManager {
         this.state.token = data.token;
         this.state.user = data.user;
         localStorage.setItem('token', data.token);
-        return { success: true };
+        return { success: true, redirectTo: data.redirectTo };
       } else {
         const error = await response.json();
         return { success: false, error: error.message };
