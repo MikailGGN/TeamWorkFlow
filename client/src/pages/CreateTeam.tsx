@@ -191,6 +191,11 @@ export default function CreateTeam() {
     enabled: false // We'll implement this API later
   });
 
+  // Fetch current user profile to get FAE email
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/user/profile"],
+  });
+
   // Fetch teams created by current FAE in the last week for canvasser registration
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ["/api/teams/my-recent"],
@@ -317,25 +322,23 @@ export default function CreateTeam() {
   const handleCanvasserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!canvasserForm.fullName || !canvasserForm.phone || !canvasserForm.nin || !canvasserForm.teamId) {
+    if (!canvasserForm.fullName || !canvasserForm.phone || !canvasserForm.nin) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields including team selection.",
+        description: "Please fill in all required fields (Full Name, Phone Number, and NIN).",
         variant: "destructive",
       });
       return;
     }
 
-    // Get selected team details
-    const selectedTeam = (teams as any[]).find(team => team.id.toString() === canvasserForm.teamId);
-    
     const registrationData = {
       ...canvasserForm,
       id: `canvasser_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: Date.now(),
       status: 'pending',
-      teamName: selectedTeam?.name || 'Unknown Team',
-      teamId: canvasserForm.teamId,
+      faeEmail: currentUser?.email || 'unknown@fae.com', // Include FAE email
+      teamName: 'Pending Assignment', // No team selected yet
+      teamId: '', // Will be assigned during approval
       location: mapPosition ? {
         lat: mapPosition[0],
         lng: mapPosition[1],
@@ -716,32 +719,18 @@ export default function CreateTeam() {
                       </div>
 
                       <div>
-                        <Label htmlFor="team" className="text-sm font-medium text-gray-700">
-                          Assign to Team *
+                        <Label htmlFor="faeEmail" className="text-sm font-medium text-gray-700">
+                          Field Area Executive (FAE)
                         </Label>
-                        <Select
-                          value={canvasserForm.teamId}
-                          onValueChange={(value) => handleCanvasserInputChange("teamId", value)}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Select a team" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {teamsLoading ? (
-                              <SelectItem value="loading" disabled>Loading teams...</SelectItem>
-                            ) : teams.length === 0 ? (
-                              <SelectItem value="no-teams" disabled>No teams available</SelectItem>
-                            ) : (
-                              teams.map((team: any) => (
-                                <SelectItem key={team.id} value={team.id.toString()}>
-                                  {team.name} - {team.activityType}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <Input
+                          id="faeEmail"
+                          type="email"
+                          value={currentUser?.email || 'Loading...'}
+                          readOnly
+                          className="mt-1 bg-gray-50 text-gray-700"
+                        />
                         <p className="text-xs text-gray-500 mt-1">
-                          Select the team this canvasser will be assigned to
+                          This canvasser will be registered under your supervision
                         </p>
                       </div>
 
