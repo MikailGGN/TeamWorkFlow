@@ -201,16 +201,25 @@ export default function CreateTeam() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category) {
+    if (!formData.name || !formData.category || !formData.activityType || formData.channels.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields including activity type and at least one channel.",
         variant: "destructive",
       });
       return;
     }
 
-    createTeamMutation.mutate(formData);
+    // Prepare team data for submission
+    const teamData = {
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      activityType: formData.activityType,
+      channels: formData.channels.join(', ') // Convert array to comma-separated string for storage
+    };
+
+    createTeamMutation.mutate(teamData);
   };
 
   const handleCanvasserSubmit = (e: React.FormEvent) => {

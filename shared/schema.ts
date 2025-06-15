@@ -48,8 +48,8 @@ export const teams = pgTable("teams", {
   name: text("name").notNull(),
   description: text("description"),
   category: text("category").notNull(),
-  activityType: text("activity_type"), // MEGA, MIDI, MINI, Other
-  channel: text("channel"),
+  activityType: text("activity_type"), // MEGA, MIDI, MINI
+  channels: text("channels"), // Comma-separated list of channels
   location: jsonb("location"), // { lat, lng, address }
   date: timestamp("date"),
   createdBy: integer("created_by").references(() => users.id),
