@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
-import L, { type LeafletEvent } from 'leaflet';
+import L from 'leaflet';
+import type { LeafletEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { EditControl } from 'react-leaflet-draw';
 import { v4 as uuidv4 } from 'uuid';
@@ -120,7 +121,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       layerRefs.set(territory.id, layer);
       layer.addTo(featureGroup);
     });
-  }, [territories, selectedTerritory, onTerritorySelect, layerIdMap, layerRefs]);
+  }, [territories, selectedTerritory, onTerritorySelect]);
 
   const handleCreated = useCallback((e: LeafletEvent & { layer: L.Layer; layerType: string }) => {
     if (!['polygon', 'rectangle'].includes(e.layerType)) return;
