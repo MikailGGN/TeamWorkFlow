@@ -20,6 +20,7 @@ import DailyCanvasserList from "@/pages/DailyCanvasserList";
 import OKRDashboard from "@/pages/OKRDashboard";
 import AdminCPanel from "@/pages/AdminCPanel";
 import CameraDemo from "@/pages/CameraDemo";
+import TimeTracking from "@/pages/TimeTracking";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/daily-canvasser-list" component={() => <ProtectedRoute component={DailyCanvasserList} />} />
       <Route path="/okr-dashboard" component={() => <ProtectedRoute component={OKRDashboard} />} />
       <Route path="/admin-cpanel" component={() => <ProtectedRoute component={AdminCPanel} />} />
+      <Route path="/time-tracking" component={() => <ProtectedRoute component={TimeTracking} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route path="/GadsReporting" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route component={NotFound} />
