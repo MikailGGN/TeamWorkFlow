@@ -191,9 +191,9 @@ export default function CreateTeam() {
     enabled: false // We'll implement this API later
   });
 
-  // Fetch created teams for selection
+  // Fetch teams created by current FAE in the last week for canvasser registration
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ["/api/teams"],
+    queryKey: ["/api/teams/my-recent"],
   });
 
   const createTeamMutation = useMutation({

@@ -227,12 +227,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(teamsWithStats);
   });
 
+  // Get teams created by current FAE in the last week (for canvasser registration)
+  app.get("/api/teams/my-recent", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const allTeams = await storage.getAllTeams();
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      // Filter teams created by current FAE in the last week
+      const myRecentTeams = allTeams.filter(team => {
+        const isMyTeam = team.createdBy === req.user?.id || team.faeId === req.user?.id?.toString();
+        const isRecent = team.createdAt && new Date(team.createdAt) >= oneWeekAgo;
+        return isMyTeam && isRecent;
+      });
+      
+      res.json(myRecentTeams);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch recent teams" });
+    }
+  });
+
   app.post("/api/teams", authenticateToken, async (req: AuthRequest, res) => {
     try {
-      const teamData = insertTeamSchema.parse({
-        ...req.body,
-        createdBy: req.user!.id
-      });
+      // Validate required fields manually since we have custom fields
+      const { name, description, category, activityType, channels, kitId, teamId, location, date } = req.body;
+      
+      if (!name || !category || !activityType || !kitId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const teamData = {
+        name,
+        description: description || null,
+        category,
+        activityType,
+        channels,
+        kitId,
+        teamId,
+        location,
+        date: date ? new Date(date) : new Date(),
+        createdBy: req.user!.id,
+        faeId: req.user!.id.toString()
+      };
       
       const team = await storage.createTeam(teamData);
       
@@ -240,8 +276,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.addTeamMember(team.id, req.user!.id, 'admin');
       
       res.status(201).json(team);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid team data" });
+    } catch (error: any) {
+      console.error('Team creation error:', error);
+      res.status(400).json({ message: error.message || "Invalid team data" });
     }
   });
 
