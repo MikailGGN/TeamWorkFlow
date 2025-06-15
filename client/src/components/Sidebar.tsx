@@ -27,6 +27,7 @@ const navigationItems = [
   { path: "/tasks", label: "Task Management", icon: CheckSquare },
   { path: "/teams", label: "Team Management", icon: Users },
   { path: "/attendance", label: "Attendance Log", icon: Clock },
+  { path: "/time-tracking", label: "Time Tracking", icon: Clock },
   { path: "/users", label: "User Management", icon: UserCog },
   { path: "/reports", label: "GADS Reporting", icon: BarChart3 },
   { path: "/admin-cpanel", label: "Admin CPanel", icon: Settings },
