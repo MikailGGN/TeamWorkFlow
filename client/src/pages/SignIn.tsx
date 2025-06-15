@@ -227,7 +227,11 @@ export function SignIn() {
                       Remember me
                     </Label>
                   </div>
-                  <button type="button" className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                  <button 
+                    type="button" 
+                    onClick={() => setLocation('/forgot-password')}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  >
                     Forgot password?
                   </button>
                 </div>
