@@ -221,10 +221,10 @@ export default function TurfMapping() {
     queryKey: ["/api/teams"],
   });
 
-  // Convert database turfs to territories format
-  useEffect(() => {
+  // Convert database turfs to territories format with memoization
+  const convertedTerritories = useMemo(() => {
     if (turfsData && Array.isArray(turfsData)) {
-      const convertedTerritories: Territory[] = turfsData.map((turf: TurfData) => ({
+      return turfsData.map((turf: TurfData) => ({
         id: turf.id.toString(),
         name: turf.name,
         description: turf.description,
@@ -237,9 +237,13 @@ export default function TurfMapping() {
         createdBy: turf.createdBy,
         createdAt: turf.createdAt,
       }));
-      setTerritories(convertedTerritories);
     }
+    return [];
   }, [turfsData]);
+
+  useEffect(() => {
+    setTerritories(convertedTerritories);
+  }, [convertedTerritories]);
 
   // Create turf mutation
   const createTurfMutation = useMutation({
@@ -750,17 +754,17 @@ export default function TurfMapping() {
               <div>
                 <Label htmlFor="territory-team">Assigned Team</Label>
                 <Select
-                  value={editingTerritory.teamId?.toString() || ''}
+                  value={editingTerritory.teamId?.toString() || 'none'}
                   onValueChange={(value) => setEditingTerritory({
                     ...editingTerritory,
-                    teamId: value ? parseInt(value) : undefined
+                    teamId: value === 'none' ? undefined : parseInt(value)
                   })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a team" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="none">Unassigned</SelectItem>
                     {teams.map((team: any) => (
                       <SelectItem key={team.id} value={team.id.toString()}>
                         {team.name}
