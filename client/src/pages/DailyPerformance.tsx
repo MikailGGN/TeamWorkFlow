@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, Target, Smartphone, Plus, Edit, Trash2, Users, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createSupabaseClient } from '../../../server/supabase-config';
+import { supabase, dbApi } from '@/lib/supabase';
 
 interface PerformanceRecord {
   id?: number;
@@ -41,7 +41,6 @@ const DailyPerformance: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const { toast } = useToast();
-  const supabase = createSupabaseClient();
 
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail");

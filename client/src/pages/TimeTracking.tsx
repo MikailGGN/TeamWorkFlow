@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, User, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { createSupabaseClient } from '../../../server/supabase-config';
+import { supabase, dbApi } from '@/lib/supabase';
 
 interface Location {
   lat: number;
@@ -31,7 +31,6 @@ const TimeTracking: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const supabase = createSupabaseClient();
 
   useEffect(() => {
     // Get current user email from localStorage
