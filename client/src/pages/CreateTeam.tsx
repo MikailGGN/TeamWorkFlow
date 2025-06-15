@@ -322,10 +322,32 @@ export default function CreateTeam() {
   const handleCanvasserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
     if (!canvasserForm.fullName || !canvasserForm.phone || !canvasserForm.nin) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields (Full Name, Phone Number, and NIN).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate NIN format (exactly 11 digits)
+    if (canvasserForm.nin.length !== 11 || !/^\d{11}$/.test(canvasserForm.nin)) {
+      toast({
+        title: "Invalid NIN",
+        description: "National ID Number must be exactly 11 digits.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate phone number format (must have 11 digits)
+    const phoneDigits = canvasserForm.phone.replace(/\D/g, '');
+    if (phoneDigits.length !== 11) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Phone number must be 11 digits in format 0000-000-0000.",
         variant: "destructive",
       });
       return;
@@ -397,7 +419,34 @@ export default function CreateTeam() {
   };
 
   const handleCanvasserInputChange = (field: keyof CanvasserRegistration, value: string) => {
-    setCanvasserForm(prev => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Format phone number as 0000-000-0000
+    if (field === 'phone') {
+      // Remove all non-digits
+      const digits = value.replace(/\D/g, '');
+      
+      // Apply formatting with dashes
+      if (digits.length <= 4) {
+        processedValue = digits;
+      } else if (digits.length <= 7) {
+        processedValue = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+      } else if (digits.length <= 11) {
+        processedValue = `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7, 11)}`;
+      } else {
+        // Limit to 11 digits max
+        const limitedDigits = digits.slice(0, 11);
+        processedValue = `${limitedDigits.slice(0, 4)}-${limitedDigits.slice(4, 7)}-${limitedDigits.slice(7)}`;
+      }
+    }
+    
+    // Format NIN to allow only 11 digits
+    if (field === 'nin') {
+      // Remove all non-digits and limit to 11 digits
+      processedValue = value.replace(/\D/g, '').slice(0, 11);
+    }
+    
+    setCanvasserForm(prev => ({ ...prev, [field]: processedValue }));
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -683,25 +732,39 @@ export default function CreateTeam() {
                           type="tel"
                           value={canvasserForm.phone}
                           onChange={(e) => handleCanvasserInputChange("phone", e.target.value)}
-                          placeholder="Enter phone number"
+                          placeholder="0000-000-0000"
                           className="mt-1"
                           required
+                          maxLength={13}
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Format: 0000-000-0000 (11 digits)
+                        </p>
                       </div>
 
                       <div>
                         <Label htmlFor="nin" className="text-sm font-medium text-gray-700">
-                          National ID Number *
+                          National ID Number (NIN) *
                         </Label>
                         <Input
                           id="nin"
                           type="text"
                           value={canvasserForm.nin}
                           onChange={(e) => handleCanvasserInputChange("nin", e.target.value)}
-                          placeholder="Enter NIN"
+                          placeholder="Enter 11-digit NIN"
                           className="mt-1"
                           required
+                          maxLength={11}
+                          pattern="[0-9]{11}"
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Must be exactly 11 digits (numbers only)
+                        </p>
+                        {canvasserForm.nin && canvasserForm.nin.length < 11 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            NIN must be 11 digits ({canvasserForm.nin.length}/11)
+                          </p>
+                        )}
                       </div>
 
                       <div>
