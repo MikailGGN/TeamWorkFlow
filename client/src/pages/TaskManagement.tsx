@@ -381,7 +381,7 @@ export default function TaskManagement() {
                               <SelectValue placeholder="Select team" />
                             </SelectTrigger>
                             <SelectContent>
-                              {teams?.map((team: any) => (
+                              {Array.isArray(teams) && teams.map((team: any) => (
                                 <SelectItem key={team.id} value={team.id.toString()}>
                                   {team.name}
                                 </SelectItem>
@@ -490,9 +490,9 @@ export default function TaskManagement() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {tasks && tasks.length > 0 ? (
+                          {Array.isArray(tasks) && tasks.length > 0 ? (
                             tasks.map((task: any) => {
-                              const team = teams?.find((t: any) => t.id === task.teamId);
+                              const team = Array.isArray(teams) ? teams.find((t: any) => t.id === task.teamId) : null;
                               const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
                               
                               return (
@@ -702,9 +702,9 @@ export default function TaskManagement() {
                       <SelectValue placeholder="Select employee" />
                     </SelectTrigger>
                     <SelectContent>
-                      {employees?.map((employee: any) => (
+                      {Array.isArray(employees) && employees.map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.email}>
-                          {employee.email} ({employee.name})
+                          {employee.email} ({employee.fullName})
                         </SelectItem>
                       ))}
                     </SelectContent>
