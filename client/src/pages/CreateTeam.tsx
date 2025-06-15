@@ -35,6 +35,7 @@ interface TeamFormData {
   category: string;
   activityType: string;
   channels: string[];
+  kitId: string;
 }
 import L from 'leaflet';
 
@@ -76,8 +77,12 @@ export default function CreateTeam() {
     description: "",
     category: "",
     activityType: "",
-    channels: []
+    channels: [],
+    kitId: ""
   });
+
+  // Team location state for ID generation
+  const [teamLocation, setTeamLocation] = useState<{lat: number, lng: number} | null>(null);
 
   // Canvasser registration state
   const [canvasserForm, setCanvasserForm] = useState<CanvasserRegistration>({
@@ -130,6 +135,38 @@ export default function CreateTeam() {
         ? prev.channels.filter(c => c !== channel)
         : [...prev.channels, channel]
     }));
+  };
+
+  // Generate team ID from date, geolocation, and team name
+  const generateTeamId = (teamName: string, location: {lat: number, lng: number}) => {
+    const date = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD format
+    const lat = location.lat.toFixed(4).replace('.', '').replace('-', 'N');
+    const lng = location.lng.toFixed(4).replace('.', '').replace('-', 'E');
+    const nameCode = teamName.replace(/\s+/g, '').substring(0, 6).toUpperCase();
+    return `${date}-${lat}${lng}-${nameCode}`;
+  };
+
+  // Get current location for team
+  const getTeamLocation = (): Promise<{lat: number, lng: number}> => {
+    return new Promise((resolve, reject) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            setTeamLocation(location);
+            resolve(location);
+          },
+          (error) => {
+            reject(error);
+          }
+        );
+      } else {
+        reject(new Error("Geolocation not supported"));
+      }
+    });
   };
 
   // Fetch existing canvassers
@@ -198,28 +235,50 @@ export default function CreateTeam() {
     setPhotoPreview(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.activityType || formData.channels.length === 0) {
+    if (!formData.name || !formData.category || !formData.activityType || formData.channels.length === 0 || !formData.kitId) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields including activity type and at least one channel.",
+        description: "Please fill in all required fields including activity type, channels, and kit ID.",
         variant: "destructive",
       });
       return;
     }
 
-    // Prepare team data for submission
-    const teamData = {
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      activityType: formData.activityType,
-      channels: formData.channels.join(', ') // Convert array to comma-separated string for storage
-    };
+    try {
+      // Get current location for team creation
+      const location = await getTeamLocation();
+      
+      // Generate unique team ID
+      const generatedTeamId = generateTeamId(formData.name, location);
+      
+      // Prepare team data for submission
+      const teamData = {
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        activityType: formData.activityType,
+        channels: formData.channels.join(', '), // Convert array to comma-separated string for storage
+        kitId: formData.kitId,
+        teamId: generatedTeamId,
+        location: {
+          lat: location.lat,
+          lng: location.lng,
+          address: `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
+        },
+        date: new Date()
+      };
 
-    createTeamMutation.mutate(teamData);
+      createTeamMutation.mutate(teamData);
+    } catch (error) {
+      toast({
+        title: "Location Error",
+        description: "Unable to get location. Please allow location access and try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCanvasserSubmit = (e: React.FormEvent) => {
@@ -381,6 +440,24 @@ export default function CreateTeam() {
                       </Select>
                     </div>
 
+                    <div>
+                      <Label htmlFor="kitId" className="text-sm font-medium text-gray-700">
+                        Kit ID *
+                      </Label>
+                      <Input
+                        id="kitId"
+                        type="text"
+                        value={formData.kitId}
+                        onChange={(e) => handleInputChange("kitId", e.target.value)}
+                        placeholder="Enter kit ID (e.g., KIT001, KIT002)"
+                        className="mt-1"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Unique identifier for the kit canvassers will use daily
+                      </p>
+                    </div>
+
                     {formData.activityType && (
                       <div>
                         <Label className="text-sm font-medium text-gray-700">
@@ -414,6 +491,55 @@ export default function CreateTeam() {
                         )}
                       </div>
                     )}
+
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">
+                        Team Location & ID Generation
+                      </Label>
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              await getTeamLocation();
+                              toast({
+                                title: "Location Captured",
+                                description: "Team location has been captured successfully.",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Location Error",
+                                description: "Unable to get location. Please enable location access.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Capture Location
+                        </Button>
+                        {teamLocation && formData.name && (
+                          <Badge variant="secondary" className="text-xs">
+                            ID: {generateTeamId(formData.name, teamLocation)}
+                          </Badge>
+                        )}
+                      </div>
+                      {teamLocation && (
+                        <div className="mt-3 bg-blue-50 p-3 rounded-lg">
+                          <h4 className="text-sm font-medium text-blue-900 mb-1">Location Captured</h4>
+                          <p className="text-xs text-blue-700">
+                            {teamLocation.lat.toFixed(6)}, {teamLocation.lng.toFixed(6)}
+                          </p>
+                          {formData.name && (
+                            <p className="text-xs text-blue-700 mt-1">
+                              Generated Team ID: <strong>{generateTeamId(formData.name, teamLocation)}</strong>
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-6">

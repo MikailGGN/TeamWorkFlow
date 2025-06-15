@@ -45,11 +45,13 @@ export const profiles = pgTable("profiles", {
 
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
+  teamId: text("team_id").unique(), // Generated ID: Date-Geolocation-TeamName
   name: text("name").notNull(),
   description: text("description"),
   category: text("category").notNull(),
   activityType: text("activity_type"), // MEGA, MIDI, MINI
   channels: text("channels"), // Comma-separated list of channels
+  kitId: text("kit_id"), // Kit ID for daily canvasser use
   location: jsonb("location"), // { lat, lng, address }
   date: timestamp("date"),
   createdBy: integer("created_by").references(() => users.id),
