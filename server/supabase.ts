@@ -2,7 +2,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, and } from "drizzle-orm";
 import { 
-  profiles, canvasserActivities,
+  employees, profiles, canvasserActivities,
+  type Employee, type InsertEmployee,
   type Profile, type InsertProfile,
   type CanvasserActivity, type InsertCanvasserActivity
 } from "@shared/schema";
@@ -17,6 +18,43 @@ const client = postgres(connectionString);
 export const db = drizzle(client);
 
 export class SupabaseStorage {
+  // Employees (FAEs/Admins)
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
+    const result = await db.select().from(employees).where(eq(employees.email, email)).limit(1);
+    return result[0];
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const result = await db.insert(employees).values({
+      ...employee,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return result[0];
+  }
+
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const result = await db.update(employees)
+      .set({ ...employee, updatedAt: new Date() })
+      .where(eq(employees.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async getAllEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees);
+  }
+
+  async getFAEs(): Promise<Employee[]> {
+    return await db.select().from(employees).where(eq(employees.role, 'FAE'));
+  }
+
   // Profiles (Canvassers/FAEs)
   async getProfile(id: string): Promise<Profile | undefined> {
     const result = await db.select().from(profiles).where(eq(profiles.id, id)).limit(1);

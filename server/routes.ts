@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
+import { supabaseStorage } from "./supabase";
 import { signInSchema, insertUserSchema, insertTeamSchema, insertTaskSchema, insertAttendanceSchema } from "@shared/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
