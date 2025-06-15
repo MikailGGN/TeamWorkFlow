@@ -28,6 +28,14 @@ import { useToast } from "@/hooks/use-toast";
 import { InsertTeam, Profile, CanvasserRegistration } from "@shared/schema";
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+
+interface TeamFormData {
+  name: string;
+  description: string;
+  category: string;
+  activityType: string;
+  channels: string[];
+}
 import L from 'leaflet';
 
 // Fix leaflet icon issue
@@ -63,10 +71,12 @@ export default function CreateTeam() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Team creation state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TeamFormData>({
     name: "",
     description: "",
-    category: ""
+    category: "",
+    activityType: "",
+    channels: []
   });
 
   // Canvasser registration state
@@ -84,6 +94,43 @@ export default function CreateTeam() {
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showCanvasserDialog, setShowCanvasserDialog] = useState(false);
+
+  // Activity type and channel mapping
+  const activityChannels = {
+    MEGA: [
+      "Market Storms",
+      "Higher Institution", 
+      "Mobile Activation-RIG Bus/Tricycle"
+    ],
+    MIDI: [
+      "Community/Densely populated Neighbourhood",
+      "Motor Park"
+    ],
+    MINI: [
+      "Parasol Activation",
+      "Door2Door /HORECA",
+      "Worship Centre"
+    ]
+  };
+
+  // Handle activity type change
+  const handleActivityTypeChange = (activityType: string) => {
+    setFormData(prev => ({
+      ...prev,
+      activityType,
+      channels: [] // Reset channels when activity type changes
+    }));
+  };
+
+  // Handle channel selection
+  const handleChannelToggle = (channel: string) => {
+    setFormData(prev => ({
+      ...prev,
+      channels: prev.channels.includes(channel)
+        ? prev.channels.filter(c => c !== channel)
+        : [...prev.channels, channel]
+    }));
+  };
 
   // Fetch existing canvassers
   const { data: canvassers = [], isLoading: canvassersLoading } = useQuery({
@@ -308,6 +355,56 @@ export default function CreateTeam() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div>
+                      <Label htmlFor="activityType" className="text-sm font-medium text-gray-700">
+                        Activity Type *
+                      </Label>
+                      <Select value={formData.activityType} onValueChange={handleActivityTypeChange}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select activity type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MEGA">MEGA</SelectItem>
+                          <SelectItem value="MIDI">MIDI</SelectItem>
+                          <SelectItem value="MINI">MINI</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.activityType && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">
+                          Channels *
+                        </Label>
+                        <div className="mt-2 space-y-3">
+                          {activityChannels[formData.activityType as keyof typeof activityChannels]?.map((channel) => (
+                            <div key={channel} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={channel}
+                                checked={formData.channels.includes(channel)}
+                                onCheckedChange={() => handleChannelToggle(channel)}
+                              />
+                              <Label
+                                htmlFor={channel}
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                {channel}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                        {formData.channels.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {formData.channels.map((channel) => (
+                              <Badge key={channel} variant="secondary" className="text-xs">
+                                {channel}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-6">
