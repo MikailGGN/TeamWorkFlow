@@ -845,6 +845,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin CPanel Routes for Employee and Profile Management
+  app.get("/api/employees", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      const employeesWithoutPasswords = employees.map(({ password, ...emp }) => emp);
+      res.json(employeesWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      res.status(500).json({ message: "Failed to fetch employees" });
+    }
+  });
+
+  app.post("/api/employees", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const data = insertUserSchema.parse(req.body);
+      const employee = await storage.createUser(data);
+      const { password, ...employeeWithoutPassword } = employee;
+      res.status(201).json(employeeWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating employee:", error);
+      res.status(500).json({ message: "Failed to create employee" });
+    }
+  });
+
+  app.get("/api/profiles", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const profiles = await storage.getAllProfiles();
+      res.json(profiles);
+    } catch (error) {
+      console.error("Error fetching profiles:", error);
+      res.status(500).json({ message: "Failed to fetch profiles" });
+    }
+  });
+
+  app.post("/api/profiles", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const profileData = {
+        ...req.body,
+        status: "pending"
+      };
+      const profile = await storage.createProfile(profileData);
+      res.status(201).json(profile);
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      res.status(500).json({ message: "Failed to create profile" });
+    }
+  });
+
+  app.post("/api/profiles/:id/approve", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const approvedBy = req.user?.id?.toString() || "admin";
+      const profile = await storage.approveCanvasser(id, approvedBy);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Error approving canvasser:", error);
+      res.status(500).json({ message: "Failed to approve canvasser" });
+    }
+  });
+
+  app.post("/api/profiles/:id/reject", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const profile = await storage.rejectCanvasser(id);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Error rejecting canvasser:", error);
+      res.status(500).json({ message: "Failed to reject canvasser" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
