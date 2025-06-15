@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { 
   employees, profiles, canvasserActivities,
   type Employee, type InsertEmployee,
@@ -28,76 +28,25 @@ const client = postgres(connectionString);
 export const db = drizzle(client);
 
 export class SupabaseStorage {
-  // Alternative method using Supabase client
-  async getEmployeeWithClient(id: string): Promise<Employee | undefined> {
-    if (!supabase) {
-      console.warn('Supabase client not available, skipping client-based fetch');
-      return undefined;
-    }
-
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching employee with client:', error);
-      return undefined;
-    }
-    return data as Employee;
-  }
-
-  async getAllEmployeesWithClient(): Promise<Employee[]> {
-    if (!supabase) {
-      console.warn('Supabase client not available, skipping client-based fetch');
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching employees with client:', error);
-      return [];
-    }
-    return data as Employee[];
-  }
-
-  async getFAEsWithClient(): Promise<Employee[]> {
-    if (!supabase) {
-      console.warn('Supabase client not available, skipping client-based fetch');
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('role', 'FAE');
-    
-    if (error) {
-      console.error('Error fetching FAEs with client:', error);
-      return [];
-    }
-    return data as Employee[];
-  }
-
   // Employees (FAEs/Admins) - Using Drizzle ORM
   async getEmployee(id: string): Promise<Employee | undefined> {
     try {
       const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
       return result[0];
     } catch (error) {
-      console.error('Error fetching employee with Drizzle:', error);
-      // Fallback to Supabase client
-      return this.getEmployeeWithClient(id);
+      console.error('Error fetching employee:', error);
+      return undefined;
     }
   }
 
   async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
-    const result = await db.select().from(employees).where(eq(employees.email, email)).limit(1);
-    return result[0];
+    try {
+      const result = await db.select().from(employees).where(eq(employees.email, email)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Error fetching employee by email:', error);
+      return undefined;
+    }
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
@@ -123,9 +72,8 @@ export class SupabaseStorage {
       const result = await db.select().from(employees);
       return result;
     } catch (error) {
-      console.error('Error fetching all employees with Drizzle:', error);
-      // Fallback to Supabase client
-      return this.getAllEmployeesWithClient();
+      console.error('Error fetching all employees:', error);
+      return [];
     }
   }
 
@@ -134,9 +82,8 @@ export class SupabaseStorage {
       const result = await db.select().from(employees).where(eq(employees.role, 'FAE'));
       return result;
     } catch (error) {
-      console.error('Error fetching FAEs with Drizzle:', error);
-      // Fallback to Supabase client
-      return this.getFAEsWithClient();
+      console.error('Error fetching FAEs:', error);
+      return [];
     }
   }
 
@@ -177,10 +124,6 @@ export class SupabaseStorage {
     return await db.select().from(profiles).where(eq(profiles.role, 'canvasser'));
   }
 
-  async getFAEs(): Promise<Profile[]> {
-    return await db.select().from(profiles).where(eq(profiles.role, 'fae'));
-  }
-
   async approveCanvasser(id: string, approvedBy: string): Promise<Profile | undefined> {
     const result = await db.update(profiles)
       .set({ 
@@ -208,6 +151,7 @@ export class SupabaseStorage {
   async createCanvasserActivity(activity: InsertCanvasserActivity): Promise<CanvasserActivity> {
     const result = await db.insert(canvasserActivities).values({
       ...activity,
+      id: Math.floor(Math.random() * 1000000),
       createdAt: new Date()
     }).returning();
     return result[0];
@@ -215,8 +159,7 @@ export class SupabaseStorage {
 
   async getCanvasserActivities(canvasserId?: string): Promise<CanvasserActivity[]> {
     if (canvasserId) {
-      return await db.select().from(canvasserActivities)
-        .where(eq(canvasserActivities.canvasserId, canvasserId));
+      return await db.select().from(canvasserActivities).where(eq(canvasserActivities.profileId, canvasserId));
     }
     return await db.select().from(canvasserActivities);
   }

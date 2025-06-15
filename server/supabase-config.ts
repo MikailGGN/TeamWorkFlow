@@ -16,10 +16,9 @@ export function getSupabaseConfig(): SupabaseConfig {
   // Prefer Supabase client if both URL and key are available
   const useSupabaseClient = !!(supabaseUrl && supabaseAnonKey);
 
-  if (!useSupabaseClient && !databaseUrl) {
-    throw new Error(
-      "Either SUPABASE_URL + SUPABASE_ANON_KEY or DATABASE_URL must be configured"
-    );
+  // DATABASE_URL is required for Drizzle ORM
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is required");
   }
 
   return {
