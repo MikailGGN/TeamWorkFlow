@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, uuid, date, decimal, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -124,6 +124,21 @@ export const turfs = pgTable("turfs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const canvasserProductivity = pgTable("canvasser_productivity", {
+  id: serial("id").primaryKey(),
+  canvasserId: uuid("canvasser_id").notNull().references(() => profiles.id),
+  date: text("date").notNull(),
+  dailyTarget: integer("daily_target").default(0),
+  actualCount: integer("actual_count").default(0),
+  gadsPoints: integer("gads_points").default(0),
+  incentiveAmount: text("incentive_amount").default("0.00"),
+  performanceRating: text("performance_rating").default("average"),
+  notes: text("notes"),
+  updatedBy: text("updated_by"),
+  lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
@@ -132,6 +147,7 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, creat
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
 export const insertCanvasserActivitySchema = createInsertSchema(canvasserActivities).omit({ id: true, createdAt: true });
 export const insertTurfSchema = createInsertSchema(turfs).omit({ id: true, createdAt: true });
+export const insertCanvasserProductivitySchema = createInsertSchema(canvasserProductivity).omit({ id: true, createdAt: true, lastUpdated: true });
 
 export const signInSchema = z.object({
   email: z.string().email(),
