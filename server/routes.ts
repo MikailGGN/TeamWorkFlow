@@ -307,6 +307,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync approved canvasser to database
+  app.post("/api/canvassers/sync", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const canvasserData = req.body;
+      
+      // Convert dataURL to binary for storage optimization in Supabase
+      let optimizedPhoto = null;
+      if (canvasserData.photo && canvasserData.photo.startsWith('data:image/')) {
+        // Extract base64 data and compress for database storage
+        const base64Data = canvasserData.photo.split(',')[1];
+        // Store compressed base64 string (can be further optimized to binary blob)
+        optimizedPhoto = base64Data;
+      }
+
+      const profileData = {
+        id: `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email: canvasserData.email || null,
+        fullName: canvasserData.fullName,
+        phone: canvasserData.phone,
+        nin: canvasserData.nin,
+        smartCashAccount: canvasserData.smartCashAccount || null,
+        role: "canvasser",
+        status: "approved",
+        location: canvasserData.location || null,
+        photo: optimizedPhoto,
+        teamId: canvasserData.teamId,
+        createdBy: req.user?.id || null,
+        approvedBy: req.user?.id || null
+      };
+
+      const profile = await storage.createProfile(profileData);
+      res.status(201).json({ success: true, profile });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // Seed employees endpoint (for testing)
   app.post("/api/seed/employees", async (req, res) => {
     try {

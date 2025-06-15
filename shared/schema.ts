@@ -36,7 +36,8 @@ export const profiles = pgTable("profiles", {
   role: text("role").notNull().default("canvasser"), // fae, canvasser, admin
   status: text("status").notNull().default("pending"), // pending, approved, rejected
   location: jsonb("location"), // { lat, lng, address }
-  photo: text("photo"),
+  photo: text("photo"), // Base64 data URL converted to binary for storage optimization
+  teamId: text("team_id"), // Associated team ID
   createdBy: uuid("created_by"),
   approvedBy: uuid("approved_by"),
   createdAt: timestamp("created_at").defaultNow(),

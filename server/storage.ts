@@ -19,7 +19,7 @@ export interface IStorage {
   // Profiles (Supabase)
   getProfile(id: string): Promise<Profile | undefined>;
   getProfileByEmail(email: string): Promise<Profile | undefined>;
-  createProfile(profile: InsertProfile): Promise<Profile>;
+  createProfile(profile: any): Promise<Profile>;
   updateProfile(id: string, profile: Partial<InsertProfile>): Promise<Profile | undefined>;
   getAllProfiles(): Promise<Profile[]>;
   getCanvassers(): Promise<Profile[]>;
@@ -63,6 +63,7 @@ export class MemStorage implements IStorage {
   private teamMembers: Map<number, TeamMember> = new Map();
   private tasks: Map<number, Task> = new Map();
   private attendance: Map<number, Attendance> = new Map();
+  private profiles: Map<string, Profile> = new Map();
   
   private userIdSeq = 1;
   private teamIdSeq = 1;

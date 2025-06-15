@@ -45,22 +45,69 @@ export default function CanvasserApproval() {
     return () => clearInterval(interval);
   }, []);
 
-  // Update canvasser status in localStorage
-  const updateCanvasserStatus = (canvasserId: string, status: 'approved' | 'rejected') => {
-    const updated = storedCanvassers.map(canvasser =>
-      canvasser.id === canvasserId 
-        ? { ...canvasser, status, approvedAt: Date.now() }
-        : canvasser
-    );
-    
-    setStoredCanvassers(updated);
-    localStorage.setItem('capturedCanvassers', JSON.stringify(updated));
-    
+  // Sync approved canvasser to database
+  const syncCanvasserToDatabase = async (canvasser: StoredCanvasser) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/canvassers/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(canvasser)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sync canvasser to database');
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Database sync error:', error);
+      throw error;
+    }
+  };
+
+  // Update canvasser status in localStorage and sync to database
+  const updateCanvasserStatus = async (canvasserId: string, status: 'approved' | 'rejected') => {
     const canvasser = storedCanvassers.find(c => c.id === canvasserId);
-    toast({
-      title: status === 'approved' ? "Canvasser Approved" : "Canvasser Rejected",
-      description: `${canvasser?.fullName} has been ${status}.`,
-    });
+    if (!canvasser) return;
+
+    try {
+      // If approving, sync to database first
+      if (status === 'approved') {
+        await syncCanvasserToDatabase(canvasser);
+        toast({
+          title: "Canvasser Approved & Synced",
+          description: `${canvasser.fullName} has been approved and added to the database.`,
+        });
+      }
+
+      // Update localStorage
+      const updated = storedCanvassers.map(c =>
+        c.id === canvasserId 
+          ? { ...c, status, approvedAt: Date.now() }
+          : c
+      );
+      
+      setStoredCanvassers(updated);
+      localStorage.setItem('capturedCanvassers', JSON.stringify(updated));
+      
+      if (status === 'rejected') {
+        toast({
+          title: "Canvasser Rejected",
+          description: `${canvasser.fullName} has been rejected.`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Sync Error",
+        description: "Failed to sync canvasser to database. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Communication functions
