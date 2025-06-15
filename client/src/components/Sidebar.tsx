@@ -10,7 +10,8 @@ import {
   User,
   UserCheck,
   MapPin,
-  Activity
+  Activity,
+  Target
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 
@@ -20,6 +21,7 @@ const navigationItems = [
   { path: "/canvasser-approval", label: "Canvasser Approval", icon: UserCheck },
   { path: "/turf-mapping", label: "Turf Mapping", icon: MapPin },
   { path: "/engagement-heatmap", label: "Engagement Heatmap", icon: Activity },
+  { path: "/daily-canvasser-list", label: "Daily Productivity", icon: Target },
   { path: "/tasks", label: "Task Management", icon: CheckSquare },
   { path: "/teams", label: "Team Management", icon: Users },
   { path: "/attendance", label: "Attendance Log", icon: Clock },
