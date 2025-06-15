@@ -227,121 +227,341 @@ export default function CreateTeam() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-slate-900">Create New Team</h1>
-              <p className="text-slate-600 mt-2">Set up a new team and invite members to collaborate</p>
+      <div className="flex-1 p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <Users className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Team Management Center</h1>
+                  <p className="text-gray-600">Create teams and register canvassers for field operations</p>
+                </div>
+              </div>
             </div>
 
-            <Card className="shadow-sm border-slate-200">
-              <CardContent className="p-8">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Tabs defaultValue="create-team" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="create-team" className="flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Create Team
+                </TabsTrigger>
+                <TabsTrigger value="register-canvasser" className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Register Canvasser
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="create-team" className="p-6">
+                <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+                  <div className="space-y-4">
                     <div>
-                      <Label className="block text-sm font-medium text-slate-700 mb-2">
+                      <Label htmlFor="name" className="text-sm font-medium text-gray-700">
                         Team Name *
                       </Label>
                       <Input
+                        id="name"
                         type="text"
                         value={formData.name}
                         onChange={(e) => handleInputChange("name", e.target.value)}
                         placeholder="Enter team name"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="mt-1"
                         required
                       />
                     </div>
+
                     <div>
-                      <Label className="block text-sm font-medium text-slate-700 mb-2">
-                        Team Category *
+                      <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                        Description
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => handleInputChange("description", e.target.value)}
+                        placeholder="Describe the team's purpose and goals"
+                        className="mt-1"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                        Category *
                       </Label>
                       <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                        <SelectTrigger className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                          <SelectValue placeholder="Select category" />
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select team category" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="development">Development</SelectItem>
-                          <SelectItem value="marketing">Marketing</SelectItem>
-                          <SelectItem value="design">Design</SelectItem>
-                          <SelectItem value="sales">Sales</SelectItem>
+                          <SelectItem value="field-operations">Field Operations</SelectItem>
+                          <SelectItem value="canvassing">Canvassing</SelectItem>
+                          <SelectItem value="survey">Survey Team</SelectItem>
+                          <SelectItem value="data-collection">Data Collection</SelectItem>
+                          <SelectItem value="outreach">Community Outreach</SelectItem>
                           <SelectItem value="support">Support</SelectItem>
-                          <SelectItem value="hr">Human Resources</SelectItem>
+                          <SelectItem value="management">Management</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
-                  <div>
-                    <Label className="block text-sm font-medium text-slate-700 mb-2">
-                      Description
-                    </Label>
-                    <Textarea
-                      value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
-                      rows={4}
-                      placeholder="Describe the team's purpose and goals"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block text-sm font-medium text-slate-700 mb-2">
-                      Team Members
-                    </Label>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <Input
-                          type="email"
-                          placeholder="Enter email address"
-                          className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
-                        <Select defaultValue="member">
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="member">Member</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="viewer">Viewer</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button type="button" className="px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        Note: Member invitation functionality will be implemented in a future update.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-6">
-                    <Button 
-                      type="button" 
+                  <div className="flex justify-end space-x-3 pt-6">
+                    <Button
+                      type="button"
                       variant="outline"
-                      onClick={() => setLocation("/dashboard")}
-                      className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                      onClick={() => setLocation("/teams")}
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={createTeamMutation.isPending}
-                      className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                      className="bg-primary-600 hover:bg-primary-700"
                     >
                       {createTeamMutation.isPending ? "Creating..." : "Create Team"}
                     </Button>
                   </div>
                 </form>
-              </CardContent>
-            </Card>
+              </TabsContent>
+
+              <TabsContent value="register-canvasser" className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Registration Form */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Canvasser Registration</h3>
+                    <form onSubmit={handleCanvasserSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                          Full Name *
+                        </Label>
+                        <Input
+                          id="fullName"
+                          type="text"
+                          value={canvasserForm.fullName}
+                          onChange={(e) => handleCanvasserInputChange("fullName", e.target.value)}
+                          placeholder="Enter full name"
+                          className="mt-1"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                          Email Address
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={canvasserForm.email}
+                          onChange={(e) => handleCanvasserInputChange("email", e.target.value)}
+                          placeholder="Enter email address"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                          Phone Number *
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={canvasserForm.phone}
+                          onChange={(e) => handleCanvasserInputChange("phone", e.target.value)}
+                          placeholder="Enter phone number"
+                          className="mt-1"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="nin" className="text-sm font-medium text-gray-700">
+                          National ID Number *
+                        </Label>
+                        <Input
+                          id="nin"
+                          type="text"
+                          value={canvasserForm.nin}
+                          onChange={(e) => handleCanvasserInputChange("nin", e.target.value)}
+                          placeholder="Enter NIN"
+                          className="mt-1"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="smartCash" className="text-sm font-medium text-gray-700">
+                          SmartCash Account
+                        </Label>
+                        <Input
+                          id="smartCash"
+                          type="text"
+                          value={canvasserForm.smartCashAccount}
+                          onChange={(e) => handleCanvasserInputChange("smartCashAccount", e.target.value)}
+                          placeholder="Enter SmartCash account"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      {/* Photo Upload */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Profile Photo</Label>
+                        <div className="mt-2 flex items-center gap-4">
+                          {photoPreview ? (
+                            <img src={photoPreview} alt="Preview" className="w-16 h-16 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                              <Camera className="w-6 h-6 text-gray-400" />
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Camera className="w-4 h-4 mr-2" />
+                            {photoPreview ? "Change Photo" : "Add Photo"}
+                          </Button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Location Section */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Location</Label>
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={getCurrentLocation}
+                            className="flex items-center gap-2"
+                          >
+                            <MapPin className="w-4 h-4" />
+                            Use Current Location
+                          </Button>
+                          {mapPosition && (
+                            <Badge variant="secondary">
+                              {mapPosition[0].toFixed(4)}, {mapPosition[1].toFixed(4)}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end space-x-3 pt-6">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={resetCanvasserForm}
+                        >
+                          Reset
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={registerCanvasser.isPending}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {registerCanvasser.isPending ? "Registering..." : "Register Canvasser"}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Map */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Location</h3>
+                    <div className="h-96 rounded-lg overflow-hidden border">
+                      <MapContainer
+                        center={[9.0820, 8.6753]} // Nigeria center coordinates
+                        zoom={6}
+                        style={{ height: '100%', width: '100%' }}
+                      >
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+                        />
+                        <LocationPicker position={mapPosition} setPosition={setMapPosition} />
+                      </MapContainer>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Click on the map to select a location or use "Use Current Location" button
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Existing Canvassers Section */}
+          <div className="mt-8 bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Registered Canvassers</h2>
+              <p className="text-gray-600">Manage and approve canvasser registrations</p>
+            </div>
+            <div className="p-6">
+              {canvassersLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Loading canvassers...</p>
+                </div>
+              ) : canvassers.length === 0 ? (
+                <div className="text-center py-8">
+                  <UserPlus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No canvassers registered yet</p>
+                  <p className="text-sm text-gray-400">Use the registration form above to add canvassers</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {canvassers.map((canvasser: Profile) => (
+                    <Card key={canvasser.id} className="border">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          {canvasser.photo ? (
+                            <img src={canvasser.photo} alt={canvasser.fullName} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                              <UserPlus className="w-5 h-5 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-medium text-gray-900">{canvasser.fullName}</h4>
+                            <p className="text-sm text-gray-500">{canvasser.phone}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Badge variant={canvasser.status === 'approved' ? 'default' : canvasser.status === 'pending' ? 'secondary' : 'destructive'}>
+                            {canvasser.status}
+                          </Badge>
+                          {canvasser.status === 'pending' && (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" className="h-7 px-2">
+                                <Check className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 px-2">
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
