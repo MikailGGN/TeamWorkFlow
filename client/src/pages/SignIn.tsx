@@ -3,9 +3,9 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Shield, Users, Target, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,6 +14,8 @@ export function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,90 +44,195 @@ export function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="text-white text-2xl w-8 h-8" />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-blue-900 to-purple-900 flex">
+      {/* Left Side - Brand Section */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
+        <div className="relative z-10 flex flex-col justify-center p-12 text-white">
+          <div className="mb-8">
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
+              <BarChart3 className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Team Management System</h1>
-            <p className="text-slate-600 mt-2">Sign in to access field operations</p>
+            <h1 className="text-4xl font-bold mb-4">Field Operations Excellence</h1>
+            <p className="text-xl text-blue-100 mb-8">
+              Streamline your team management with advanced analytics and comprehensive field operations control.
+            </p>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label className="block text-sm font-medium text-slate-700 mb-2">
-                Email Address
-              </Label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                required
-              />
+          {/* Feature Icons */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-semibold">Team Management</p>
+                <p className="text-sm text-blue-200">Coordinate field operations</p>
+              </div>
             </div>
-            
-            <div>
-              <Label className="block text-sm font-medium text-slate-700 mb-2">
-                Password
-              </Label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                required
-              />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <Target className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-semibold">Performance Tracking</p>
+                <p className="text-sm text-blue-200">Monitor KPIs and OKRs</p>
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="remember" />
-                <Label htmlFor="remember" className="text-sm text-slate-600">
-                  Remember me
-                </Label>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5" />
               </div>
-              <a href="#" className="text-sm text-primary-600 hover:text-primary-700">
-                Forgot password?
-              </a>
+              <div>
+                <p className="font-semibold">Secure Access</p>
+                <p className="text-sm text-blue-200">Enterprise-grade security</p>
+              </div>
             </div>
-            
-            <Button 
-              type="submit" 
-              disabled={loading}
-              className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
-            >
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-
-          {/* Test Credentials */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg border">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Test Credentials:</h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-600">FAE (redirects to CreateTeam):</span>
-                <code className="bg-white px-2 py-1 rounded">fae@company.com</code>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5" />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Admin (redirects to Dashboard):</span>
-                <code className="bg-white px-2 py-1 rounded">admin@company.com</code>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Regular User:</span>
-                <code className="bg-white px-2 py-1 rounded">admin@example.com / admin123</code>
-              </div>
-              <div className="text-center text-gray-500 mt-2">
-                <em>Employee accounts: any password works (simplified auth)</em>
+              <div>
+                <p className="font-semibold">Real-time Analytics</p>
+                <p className="text-sm text-blue-200">Live performance insights</p>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        {/* Decorative Elements */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-purple-400/10 rounded-full blur-lg"></div>
+      </div>
+
+      {/* Right Side - Sign In Form */}
+      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
+        <div className="w-full max-w-md">
+          <Card className="backdrop-blur-sm bg-white/95 border-0 shadow-2xl">
+            <CardHeader className="text-center space-y-2 pb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
+              <p className="text-gray-600">Sign in to your field operations dashboard</p>
+            </CardHeader>
+            
+            <CardContent className="pt-0">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="h-12 px-4 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="h-12 px-4 pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember" 
+                      checked={rememberMe}
+                      onCheckedChange={setRememberMe}
+                      className="border-gray-300"
+                    />
+                    <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
+                      Remember me
+                    </Label>
+                  </div>
+                  <button type="button" className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                    Forgot password?
+                  </button>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Signing in...</span>
+                    </div>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </form>
+
+              {/* Test Credentials */}
+              <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Shield className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold text-gray-700">Demo Credentials</h3>
+                </div>
+                <div className="space-y-3 text-xs">
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 font-medium">Field Area Executive:</span>
+                      <code className="bg-white px-2 py-1 rounded border text-blue-600">fae@company.com</code>
+                    </div>
+                    <p className="text-gray-500 text-xs">→ Team Creation Dashboard</p>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 font-medium">System Administrator:</span>
+                      <code className="bg-white px-2 py-1 rounded border text-blue-600">admin@company.com</code>
+                    </div>
+                    <p className="text-gray-500 text-xs">→ Main Operations Dashboard</p>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 font-medium">Standard Access:</span>
+                      <code className="bg-white px-2 py-1 rounded border text-blue-600">admin@example.com</code>
+                    </div>
+                    <p className="text-gray-500 text-xs">Password: admin123</p>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-center text-gray-500 italic">
+                      Employee accounts: simplified authentication (any password)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
