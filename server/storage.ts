@@ -254,6 +254,100 @@ export class MemStorage implements IStorage {
       user: this.users.get(att.userId!)!
     }));
   }
+
+  // Profile management methods
+  async getProfile(id: string): Promise<Profile | undefined> {
+    return this.profiles.get(id);
+  }
+
+  async getProfileByEmail(email: string): Promise<Profile | undefined> {
+    return Array.from(this.profiles.values()).find(profile => profile.email === email);
+  }
+
+  async createProfile(profileData: any): Promise<Profile> {
+    const profile: Profile = {
+      id: profileData.id,
+      email: profileData.email,
+      fullName: profileData.fullName,
+      avatarUrl: null,
+      phone: profileData.phone,
+      nin: profileData.nin,
+      smartCashAccount: profileData.smartCashAccount,
+      role: profileData.role || 'canvasser',
+      status: profileData.status || 'pending',
+      location: profileData.location,
+      photo: profileData.photo,
+      teamId: profileData.teamId,
+      createdBy: profileData.createdBy,
+      approvedBy: profileData.approvedBy,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.profiles.set(profile.id, profile);
+    return profile;
+  }
+
+  async updateProfile(id: string, profileData: Partial<InsertProfile>): Promise<Profile | undefined> {
+    const profile = this.profiles.get(id);
+    if (!profile) return undefined;
+    
+    const updatedProfile = { ...profile, ...profileData, updatedAt: new Date() };
+    this.profiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  async getAllProfiles(): Promise<Profile[]> {
+    return Array.from(this.profiles.values());
+  }
+
+  async getCanvassers(): Promise<Profile[]> {
+    return Array.from(this.profiles.values()).filter(profile => profile.role === 'canvasser');
+  }
+
+  async getFAEs(): Promise<Profile[]> {
+    return Array.from(this.profiles.values()).filter(profile => profile.role === 'fae');
+  }
+
+  async approveCanvasser(id: string, approvedBy: string): Promise<Profile | undefined> {
+    const profile = this.profiles.get(id);
+    if (!profile) return undefined;
+    
+    const updatedProfile = { 
+      ...profile, 
+      status: 'approved', 
+      approvedBy, 
+      updatedAt: new Date() 
+    };
+    this.profiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  async rejectCanvasser(id: string): Promise<Profile | undefined> {
+    const profile = this.profiles.get(id);
+    if (!profile) return undefined;
+    
+    const updatedProfile = { 
+      ...profile, 
+      status: 'rejected', 
+      updatedAt: new Date() 
+    };
+    this.profiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  // Canvasser Activities (placeholder implementations)
+  async createCanvasserActivity(activity: InsertCanvasserActivity): Promise<CanvasserActivity> {
+    throw new Error("Method not implemented for MemStorage");
+  }
+
+  async getCanvasserActivities(canvasserId?: string): Promise<CanvasserActivity[]> {
+    return [];
+  }
+
+  async updateCanvasserActivity(id: number, activity: Partial<InsertCanvasserActivity>): Promise<CanvasserActivity | undefined> {
+    return undefined;
+  }
 }
 
 export const storage = new MemStorage();
