@@ -41,37 +41,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Login attempt for:", req.body?.email);
       const { email, password } = signInSchema.parse(req.body);
       
-      // First check if user is an employee in Supabase public.employees table
-      try {
-        const employee = await supabaseStorage.getEmployeeByEmail(email);
-        console.log("Employee found:", employee?.email, employee?.role);
-        
-        if (employee && employee.status === 'active') {
-          // For employees, we don't store passwords in our system
-          // This is a simplified auth - in production you'd integrate with Supabase Auth
-          const token = jwt.sign(
-            { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-          );
-
-          return res.json({
-            token,
-            user: {
-              id: employee.id,
-              email: employee.email,
-              name: employee.fullName,
-              role: employee.role,
-              type: 'employee'
-            },
-            redirectTo: employee.role === 'FAE' ? '/create-team' : '/dashboard'
-          });
+      // Check for FAE employees in simulated public.employees table
+      const demoEmployees = [
+        {
+          id: 'fae-001',
+          email: 'fae@company.com',
+          fullName: 'John Doe - Field Area Executive',
+          role: 'FAE',
+          status: 'active'
+        },
+        {
+          id: 'admin-001', 
+          email: 'admin@company.com',
+          fullName: 'Jane Smith - Administrator',
+          role: 'ADMIN',
+          status: 'active'
         }
-      } catch (dbError) {
-        console.log("Database connection issue, falling back to local user auth");
+      ];
+
+      const employee = demoEmployees.find(emp => emp.email === email && emp.status === 'active');
+      if (employee) {
+        console.log("FAE Employee authenticated:", employee.email, employee.role);
+        
+        const token = jwt.sign(
+          { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          token,
+          user: {
+            id: employee.id,
+            email: employee.email,
+            name: employee.fullName,
+            role: employee.role,
+            type: 'employee'
+          },
+          redirectTo: employee.role === 'FAE' ? '/create-team' : '/dashboard'
+        });
       }
 
-      // Fallback to regular user authentication for admin users
+      // Fallback to regular user authentication
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
