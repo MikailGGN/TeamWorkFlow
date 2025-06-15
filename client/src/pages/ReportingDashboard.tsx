@@ -15,7 +15,8 @@ import {
   Eye,
   Code,
   Megaphone,
-  User
+  User,
+  BarChart3
 } from "lucide-react";
 import { Link } from "wouter";
 
