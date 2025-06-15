@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useCallback } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -8,20 +8,87 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Plus, 
+  Camera, 
+  MapPin, 
+  UserPlus, 
+  Calendar,
+  Check,
+  X,
+  Users,
+  Target
+} from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { InsertTeam } from "@shared/schema";
+import { InsertTeam, Profile, CanvasserRegistration } from "@shared/schema";
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+
+// Fix leaflet icon issue
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Map click handler component
+function LocationPicker({ position, setPosition }: { 
+  position: [number, number] | null; 
+  setPosition: (pos: [number, number] | null) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+
+  return position === null ? null : (
+    <Marker position={position}>
+      <Popup>Selected location</Popup>
+    </Marker>
+  );
+}
 
 export default function CreateTeam() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Team creation state
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     category: ""
+  });
+
+  // Canvasser registration state
+  const [canvasserForm, setCanvasserForm] = useState<CanvasserRegistration>({
+    fullName: "",
+    email: "",
+    phone: "",
+    nin: "",
+    smartCashAccount: "",
+    location: undefined,
+    photo: undefined,
+  });
+
+  const [selectedCanvassers, setSelectedCanvassers] = useState<string[]>([]);
+  const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [showCanvasserDialog, setShowCanvasserDialog] = useState(false);
+
+  // Fetch existing canvassers
+  const { data: canvassers = [], isLoading: canvassersLoading } = useQuery({
+    queryKey: ["/api/profiles/canvassers"],
+    enabled: false // We'll implement this API later
   });
 
   const createTeamMutation = useMutation({
@@ -47,6 +114,43 @@ export default function CreateTeam() {
     },
   });
 
+  const registerCanvasser = useMutation({
+    mutationFn: async (canvasserData: CanvasserRegistration) => {
+      const response = await apiRequest("POST", "/api/profiles/canvassers", canvasserData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/canvassers"] });
+      toast({
+        title: "Success",
+        description: "Canvasser registered successfully",
+      });
+      setShowCanvasserDialog(false);
+      resetCanvasserForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to register canvasser",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetCanvasserForm = () => {
+    setCanvasserForm({
+      fullName: "",
+      email: "",
+      phone: "",
+      nin: "",
+      smartCashAccount: "",
+      location: undefined,
+      photo: undefined,
+    });
+    setMapPosition(null);
+    setPhotoPreview(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -60,6 +164,62 @@ export default function CreateTeam() {
     }
 
     createTeamMutation.mutate(formData);
+  };
+
+  const handleCanvasserSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const registrationData: CanvasserRegistration = {
+      ...canvasserForm,
+      location: mapPosition ? {
+        lat: mapPosition[0],
+        lng: mapPosition[1],
+        address: `${mapPosition[0].toFixed(6)}, ${mapPosition[1].toFixed(6)}`
+      } : undefined
+    };
+
+    registerCanvasser.mutate(registrationData);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setPhotoPreview(result);
+        setCanvasserForm(prev => ({ ...prev, photo: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const pos: [number, number] = [position.coords.latitude, position.coords.longitude];
+          setMapPosition(pos);
+        },
+        (error) => {
+          toast({
+            title: "Location Error",
+            description: "Unable to get your location. Please click on the map to select.",
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      toast({
+        title: "Location Not Supported",
+        description: "Geolocation is not supported by this browser.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCanvasserInputChange = (field: keyof CanvasserRegistration, value: string) => {
+    setCanvasserForm(prev => ({ ...prev, [field]: value }));
   };
 
   const handleInputChange = (field: string, value: string) => {

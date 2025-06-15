@@ -16,6 +16,17 @@ export interface IStorage {
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
 
+  // Profiles (Supabase)
+  getProfile(id: string): Promise<Profile | undefined>;
+  getProfileByEmail(email: string): Promise<Profile | undefined>;
+  createProfile(profile: InsertProfile): Promise<Profile>;
+  updateProfile(id: string, profile: Partial<InsertProfile>): Promise<Profile | undefined>;
+  getAllProfiles(): Promise<Profile[]>;
+  getCanvassers(): Promise<Profile[]>;
+  getFAEs(): Promise<Profile[]>; // Field Area Executives
+  approveCanvasser(id: string, approvedBy: string): Promise<Profile | undefined>;
+  rejectCanvasser(id: string): Promise<Profile | undefined>;
+
   // Teams
   getTeam(id: number): Promise<Team | undefined>;
   createTeam(team: InsertTeam): Promise<Team>;
@@ -23,8 +34,8 @@ export interface IStorage {
   getUserTeams(userId: number): Promise<Team[]>;
 
   // Team Members
-  addTeamMember(teamId: number, userId: number, role: string): Promise<TeamMember>;
-  getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]>;
+  addTeamMember(teamId: number, userId: number, role: string, profileId?: string): Promise<TeamMember>;
+  getTeamMembers(teamId: number): Promise<(TeamMember & { user: User, profile?: Profile })[]>;
   removeTeamMember(teamId: number, userId: number): Promise<boolean>;
 
   // Tasks
@@ -38,7 +49,12 @@ export interface IStorage {
   // Attendance
   createAttendance(attendance: InsertAttendance): Promise<Attendance>;
   getUserAttendance(userId: number, startDate: Date, endDate: Date): Promise<Attendance[]>;
-  getAllAttendance(date?: Date): Promise<(Attendance & { user: User })[]>;
+  getAllAttendance(date?: Date): Promise<(Attendance & { user: User, profile?: Profile })[]>;
+
+  // Canvasser Activities
+  createCanvasserActivity(activity: InsertCanvasserActivity): Promise<CanvasserActivity>;
+  getCanvasserActivities(canvasserId?: string): Promise<CanvasserActivity[]>;
+  updateCanvasserActivity(id: number, activity: Partial<InsertCanvasserActivity>): Promise<CanvasserActivity | undefined>;
 }
 
 export class MemStorage implements IStorage {
