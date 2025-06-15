@@ -102,6 +102,28 @@ export function SignIn() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+
+          {/* Test Credentials */}
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg border">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Test Credentials:</h3>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-gray-600">FAE (redirects to CreateTeam):</span>
+                <code className="bg-white px-2 py-1 rounded">fae@company.com</code>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Admin (redirects to Dashboard):</span>
+                <code className="bg-white px-2 py-1 rounded">admin@company.com</code>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Regular User:</span>
+                <code className="bg-white px-2 py-1 rounded">admin@example.com / admin123</code>
+              </div>
+              <div className="text-center text-gray-500 mt-2">
+                <em>Employee accounts: any password works (simplified auth)</em>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
