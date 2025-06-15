@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,41 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BarChart3, Shield, Users, Target, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import marbleDeeImage from "@assets/Marbledee-IWD2025_1749987380484.png";
+import hawkerImage from "@assets/hawker_1749987409718.jpg";
+
+// Flip Card Component
+const FlipCard = ({ image, delay }: { image: string; delay: number }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsFlipped(prev => !prev);
+    }, 3000 + delay);
+
+    return () => clearInterval(interval);
+  }, [delay]);
+
+  return (
+    <div className="flip-card-container relative">
+      <div className={`flip-card-inner ${isFlipped ? 'flipped' : ''}`}>
+        <div className="flip-card-front">
+          <img
+            src={image}
+            alt="Field Operations"
+            className="w-full h-full object-cover rounded-xl"
+          />
+        </div>
+        <div className="flip-card-back bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+          <div className="text-center text-white p-4">
+            <BarChart3 className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-sm font-semibold">Field Excellence</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export function SignIn() {
   const [, setLocation] = useLocation();
@@ -59,6 +94,22 @@ export function SignIn() {
             </p>
           </div>
           
+          {/* Image Collage */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="h-32">
+              <FlipCard image={marbleDeeImage} delay={0} />
+            </div>
+            <div className="h-32">
+              <FlipCard image={hawkerImage} delay={500} />
+            </div>
+            <div className="h-32">
+              <FlipCard image={marbleDeeImage} delay={1000} />
+            </div>
+            <div className="h-32">
+              <FlipCard image={hawkerImage} delay={1500} />
+            </div>
+          </div>
+
           {/* Feature Icons */}
           <div className="grid grid-cols-2 gap-6">
             <div className="flex items-center space-x-3">
@@ -163,7 +214,7 @@ export function SignIn() {
                     <Checkbox 
                       id="remember" 
                       checked={rememberMe}
-                      onCheckedChange={setRememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
                       className="border-gray-300"
                     />
                     <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
