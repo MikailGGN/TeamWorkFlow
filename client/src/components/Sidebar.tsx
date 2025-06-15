@@ -8,7 +8,8 @@ import {
   TrendingUp,
   LogOut,
   User,
-  UserCheck
+  UserCheck,
+  MapPin
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 
@@ -16,6 +17,7 @@ const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/create-team", label: "Create Team", icon: Users },
   { path: "/canvasser-approval", label: "Canvasser Approval", icon: UserCheck },
+  { path: "/turf-mapping", label: "Turf Mapping", icon: MapPin },
   { path: "/tasks", label: "Task Management", icon: CheckSquare },
   { path: "/teams", label: "Team Management", icon: Users },
   { path: "/attendance", label: "Attendance Log", icon: Clock },
