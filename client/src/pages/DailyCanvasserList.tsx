@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Save, RefreshCw, Users, TrendingUp, Award, Edit2, Check, X } from "lucide-react";
+import { CalendarIcon, Save, RefreshCw, Users, TrendingUp, Award, Edit2, Check, X, Package, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,8 @@ interface CanvasserProductivity {
   email: string;
   fullName: string;
   status: string;
+  kitId: string;
+  kitStatus: 'assigned' | 'returned' | 'missing' | 'damaged';
   dailyTarget: number;
   actualCount: number;
   gadsPoints: number;
@@ -55,7 +57,11 @@ export default function DailyCanvasserList() {
     totalIncentives: canvassersData.reduce((sum: number, c: CanvasserProductivity) => sum + c.incentiveAmount, 0),
     averagePerformance: canvassersData.length > 0 
       ? (canvassersData.reduce((sum: number, c: CanvasserProductivity) => sum + (c.actualCount / c.dailyTarget * 100), 0) / canvassersData.length).toFixed(1)
-      : 0
+      : 0,
+    kitsAssigned: canvassersData.filter((c: CanvasserProductivity) => c.kitStatus === 'assigned').length,
+    kitsReturned: canvassersData.filter((c: CanvasserProductivity) => c.kitStatus === 'returned').length,
+    kitsMissing: canvassersData.filter((c: CanvasserProductivity) => c.kitStatus === 'missing').length,
+    kitsDamaged: canvassersData.filter((c: CanvasserProductivity) => c.kitStatus === 'damaged').length
   };
 
   // Update canvasser productivity mutation
@@ -123,6 +129,25 @@ export default function DailyCanvasserList() {
     return (
       <Badge className={variants[rating as keyof typeof variants] || variants.average}>
         {rating.charAt(0).toUpperCase() + rating.slice(1)}
+      </Badge>
+    );
+  };
+
+  const getKitStatusBadge = (status: string) => {
+    const variants = {
+      assigned: { className: "bg-green-100 text-green-800", icon: CheckCircle },
+      returned: { className: "bg-blue-100 text-blue-800", icon: Package },
+      missing: { className: "bg-red-100 text-red-800", icon: AlertTriangle },
+      damaged: { className: "bg-orange-100 text-orange-800", icon: XCircle }
+    };
+    
+    const config = variants[status as keyof typeof variants] || variants.assigned;
+    const Icon = config.icon;
+    
+    return (
+      <Badge className={config.className}>
+        <Icon className="w-3 h-3 mr-1" />
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
   };
@@ -234,6 +259,60 @@ export default function DailyCanvasserList() {
         </CardHeader>
       </Card>
 
+      {/* KIT ID Equipment Management */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            KIT ID Equipment Management
+          </CardTitle>
+          <CardDescription>Track daily equipment assignment and return status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-green-700">Assigned</span>
+              </div>
+              <div className="text-2xl font-bold text-green-600">{dailyMetrics.kitsAssigned}</div>
+            </div>
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Package className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">Returned</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-600">{dailyMetrics.kitsReturned}</div>
+            </div>
+            <div className="text-center p-3 bg-red-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+                <span className="text-sm font-medium text-red-700">Missing</span>
+              </div>
+              <div className="text-2xl font-bold text-red-600">{dailyMetrics.kitsMissing}</div>
+            </div>
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <XCircle className="w-4 h-4 text-orange-600" />
+                <span className="text-sm font-medium text-orange-700">Damaged</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-600">{dailyMetrics.kitsDamaged}</div>
+            </div>
+          </div>
+          {(dailyMetrics.kitsMissing > 0 || dailyMetrics.kitsDamaged > 0) && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-800">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-medium">Equipment Alert</span>
+              </div>
+              <p className="text-sm text-amber-700 mt-1">
+                {dailyMetrics.kitsMissing} missing and {dailyMetrics.kitsDamaged} damaged equipment items require immediate attention.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Daily Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <Card>
@@ -313,6 +392,8 @@ export default function DailyCanvasserList() {
                     <TableHead>Canvasser</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>KIT ID</TableHead>
+                    <TableHead>Kit Status</TableHead>
                     <TableHead>Daily Target</TableHead>
                     <TableHead>Actual Count</TableHead>
                     <TableHead>Achievement %</TableHead>
