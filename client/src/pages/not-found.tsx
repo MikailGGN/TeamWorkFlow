@@ -1,5 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, LogOut, Home } from "lucide-react";
+import { authManager } from "@/lib/auth";
+import { useLocation } from "wouter";
 
 export default function NotFound() {
   return (

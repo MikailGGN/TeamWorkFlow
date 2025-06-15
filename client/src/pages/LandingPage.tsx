@@ -2,13 +2,33 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BarChart3, Users, Target, TrendingUp } from "lucide-react";
+import { BarChart3, Users, Target, TrendingUp, LogOut } from "lucide-react";
+import { authManager } from "@/lib/auth";
 
 export function LandingPage() {
   const [, setLocation] = useLocation();
+  const user = authManager.getUser();
+
+  const handleSignOut = () => {
+    authManager.signOut();
+    window.location.href = "/";
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-slate-100">
+      {/* Header with Sign Out for authenticated users */}
+      {user && (
+        <div className="fixed top-0 right-0 p-4 z-50">
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            className="bg-white/90 backdrop-blur-sm hover:bg-white"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
+      )}
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">

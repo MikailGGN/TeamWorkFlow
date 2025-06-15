@@ -51,14 +51,14 @@ export function Sidebar() {
             
             return (
               <Link key={item.path} href={item.path}>
-                <a className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                <div className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                   isActive 
                     ? "bg-primary-50 text-primary-700 font-medium" 
                     : "text-slate-600 hover:bg-slate-100"
                 }`}>
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
-                </a>
+                </div>
               </Link>
             );
           })}
