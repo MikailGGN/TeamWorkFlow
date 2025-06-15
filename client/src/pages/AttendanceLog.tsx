@@ -55,11 +55,33 @@ export default function AttendanceLog() {
     notes: ""
   });
 
-  const { data: attendance, isLoading: attendanceLoading } = useQuery<TimeClockEntry[]>({
+  const { data: attendance, isLoading: attendanceLoading, error: attendanceError } = useQuery<TimeClockEntry[]>({
     queryKey: ["/api/time-clocked", timeRange.start.format('YYYY-MM-DD'), timeRange.end.format('YYYY-MM-DD')],
     queryFn: async () => {
       if (!supabase) {
-        throw new Error('Supabase client not configured. Please check your environment variables.');
+        // Fallback to regular API when Supabase isn't configured
+        const response = await fetch(`/api/attendance?date=${timeRange.start.format('YYYY-MM-DD')}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (!response.ok) throw new Error('Failed to fetch attendance data from API');
+        const fallbackData = await response.json();
+        
+        // Transform regular attendance data to match TimeClockEntry structure
+        return fallbackData.map((record: any) => ({
+          id: record.id.toString(),
+          date: record.date,
+          time: record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : 'Not recorded',
+          type: 'Clock In',
+          location: record.location || null,
+          employees: {
+            fullnames: record.user?.name || 'Unknown',
+            mobile_number: 'N/A',
+            employee_id: record.user?.id?.toString() || 'N/A',
+            role: record.user?.role || 'N/A'
+          }
+        }));
       }
 
       const { data, error } = await supabase
@@ -80,7 +102,7 @@ export default function AttendanceLog() {
 
       if (error) {
         console.error('Supabase error:', error);
-        throw new Error('Failed to fetch attendance data');
+        throw new Error('Failed to fetch attendance data from Supabase');
       }
 
       return data || [];
@@ -183,6 +205,13 @@ export default function AttendanceLog() {
               <div>
                 <h1 className="text-3xl font-bold text-slate-900">Attendance Log</h1>
                 <p className="text-slate-600 mt-1">Track employee attendance and working hours</p>
+                {!supabase && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      Using fallback data source. Configure Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) for direct time_clocked table access.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
