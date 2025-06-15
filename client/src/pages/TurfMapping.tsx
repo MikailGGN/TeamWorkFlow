@@ -221,10 +221,10 @@ export default function TurfMapping() {
     queryKey: ["/api/teams"],
   });
 
-  // Convert database turfs to territories format with memoization
-  const convertedTerritories = useMemo(() => {
+  // Convert database turfs to territories format
+  useEffect(() => {
     if (turfsData && Array.isArray(turfsData)) {
-      return turfsData.map((turf: TurfData) => ({
+      const converted: Territory[] = turfsData.map((turf: TurfData) => ({
         id: turf.id.toString(),
         name: turf.name,
         description: turf.description,
@@ -237,13 +237,10 @@ export default function TurfMapping() {
         createdBy: turf.createdBy,
         createdAt: turf.createdAt,
       }));
+      
+      setTerritories(converted);
     }
-    return [];
   }, [turfsData]);
-
-  useEffect(() => {
-    setTerritories(convertedTerritories);
-  }, [convertedTerritories]);
 
   // Create turf mutation
   const createTurfMutation = useMutation({
