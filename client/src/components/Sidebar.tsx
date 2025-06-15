@@ -24,6 +24,7 @@ const navigationItems = [
   { path: "/engagement-heatmap", label: "Engagement Heatmap", icon: Activity },
   { path: "/daily-canvasser-list", label: "Daily Productivity", icon: Target },
   { path: "/daily-performance", label: "Daily Performance", icon: TrendingUp },
+  { path: "/fae-reporting", label: "FAE Reporting", icon: BarChart3 },
   { path: "/okr-dashboard", label: "OKR Performance", icon: TrendingUp },
   { path: "/tasks", label: "Task Management", icon: CheckSquare },
   { path: "/teams", label: "Team Management", icon: Users },

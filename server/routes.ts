@@ -925,6 +925,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FAE Performance Reporting API
+  app.get("/api/fae-performance/report", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { fae_email, start_date, end_date } = req.query;
+      
+      if (!fae_email || !start_date || !end_date) {
+        return res.status(400).json({ error: "Missing required parameters: fae_email, start_date, end_date" });
+      }
+
+      // Mock performance data for demonstration
+      const mockDailyReports = [
+        { date: start_date, gads: 15, smartphone_activation: 8, others: 3, total: 26, canvassers_active: 5 },
+        { date: end_date, gads: 12, smartphone_activation: 6, others: 4, total: 22, canvassers_active: 4 }
+      ];
+
+      res.json({ daily_reports: mockDailyReports, monthly_reports: [] });
+    } catch (error: any) {
+      console.error("Error generating FAE performance report:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/canvasser-performance", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const performanceData = req.body;
+      
+      if (!performanceData.canvasser_id || !performanceData.date) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      performanceData.recorded_by = req.user?.email;
+      performanceData.id = Date.now();
+      performanceData.created_at = new Date().toISOString();
+      
+      res.json(performanceData);
+    } catch (error: any) {
+      console.error("Error creating canvasser performance:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
