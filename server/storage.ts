@@ -55,6 +55,15 @@ export interface IStorage {
   createCanvasserActivity(activity: InsertCanvasserActivity): Promise<CanvasserActivity>;
   getCanvasserActivities(canvasserId?: string): Promise<CanvasserActivity[]>;
   updateCanvasserActivity(id: number, activity: Partial<InsertCanvasserActivity>): Promise<CanvasserActivity | undefined>;
+
+  // Turfs
+  getTurf(id: number): Promise<Turf | undefined>;
+  createTurf(turf: InsertTurf): Promise<Turf>;
+  updateTurf(id: number, turf: Partial<InsertTurf>): Promise<Turf | undefined>;
+  deleteTurf(id: number): Promise<boolean>;
+  getAllTurfs(): Promise<Turf[]>;
+  getTurfsByTeam(teamId: number): Promise<Turf[]>;
+  getTurfsByCreator(createdBy: number): Promise<Turf[]>;
 }
 
 export class MemStorage implements IStorage {

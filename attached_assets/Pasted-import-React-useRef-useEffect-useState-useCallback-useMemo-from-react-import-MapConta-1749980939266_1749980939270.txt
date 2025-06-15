@@ -1,0 +1,170 @@
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
+import L, { type LeafletEvent } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet.draw/dist/leaflet.draw.css';
+import { EditControl } from 'react-leaflet-draw';
+import { v4 as uuidv4 } from 'uuid';
+
+// Type definitions
+interface Territory {
+  id: string;
+  name: string;
+  geojson: GeoJSON.Feature;
+  color: string;
+}
+
+interface MapComponentProps {
+  initialTerritories?: Territory[];
+  onTerritoryCreated: (territory: Territory) => void;
+  onTerritoryEdited: (territory: Territory) => void;
+  onTerritoryDeleted: (territoryId: string) => void;
+}
+
+// Configure Leaflet default icon
+const configureLeafletIcons = () => {
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  });
+};
+
+// Helper function to generate random colors
+const getRandomColor = (): string => {
+  return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+};
+
+const DEFAULT_CENTER: L.LatLngExpression = [6.5244, 3.3792]; // Lagos, Nigeria
+const DEFAULT_ZOOM = 10;
+
+const MapComponent: React.FC<MapComponentProps> = ({
+  initialTerritories = [],
+  onTerritoryCreated,
+  onTerritoryEdited,
+  onTerritoryDeleted,
+}) => {
+  const featureGroupRef = useRef<L.FeatureGroup>(null);
+  const layerIdMap = useRef(new Map<L.Layer, string>()).current;
+  const [territories, setTerritories] = useState<Territory[]>(initialTerritories);
+
+  // Configure Leaflet icons on first render
+  useEffect(configureLeafletIcons, []);
+
+  // Add territory layers to the map
+  useEffect(() => {
+    const featureGroup = featureGroupRef.current;
+    if (!featureGroup) return;
+
+    // Clear existing layers and mapping
+    featureGroup.clearLayers();
+    layerIdMap.clear();
+
+    territories.forEach(territory => {
+      const layer = L.geoJSON(territory.geojson, {
+        style: {
+          color: territory.color,
+          weight: 3,
+          opacity: 0.7,
+          fillOpacity: 0.3,
+        }
+      });
+      layerIdMap.set(layer, territory.id);
+      layer.addTo(featureGroup);
+    });
+  }, [territories, layerIdMap]);
+
+  const handleCreated = useCallback((e: LeafletEvent & { layer: L.Layer; layerType: string }) => {
+    if (!['polygon', 'rectangle'].includes(e.layerType)) return;
+
+    const newTerritory: Territory = {
+      id: uuidv4(),
+      name: `Territory ${territories.length + 1}`,
+      geojson: (e.layer as any).toGeoJSON(),
+      color: getRandomColor(),
+    };
+
+    layerIdMap.set(e.layer, newTerritory.id);
+    setTerritories(prev => [...prev, newTerritory]);
+    onTerritoryCreated(newTerritory);
+  }, [territories.length, onTerritoryCreated, layerIdMap]);
+
+  const handleEdited = useCallback((e: LeafletEvent & { layers: L.LayerGroup }) => {
+    const updatedTerritories: Territory[] = [];
+    
+    e.layers.eachLayer(layer => {
+      const territoryId = layerIdMap.get(layer);
+      if (!territoryId) return;
+
+      const existingTerritory = territories.find(t => t.id === territoryId);
+      if (!existingTerritory) return;
+
+      const updatedTerritory = {
+        ...existingTerritory,
+        geojson: (layer as any).toGeoJSON()
+      };
+
+      updatedTerritories.push(updatedTerritory);
+      onTerritoryEdited(updatedTerritory);
+    });
+
+    if (updatedTerritories.length > 0) {
+      setTerritories(prev => 
+        prev.map(t => updatedTerritories.find(ut => ut.id === t.id) || t)
+      );
+    }
+  }, [territories, onTerritoryEdited, layerIdMap]);
+
+  const handleDeleted = useCallback((e: LeafletEvent & { layers: L.LayerGroup }) => {
+    const deletedIds = new Set<string>();
+    
+    e.layers.eachLayer(layer => {
+      const territoryId = layerIdMap.get(layer);
+      if (territoryId) {
+        deletedIds.add(territoryId);
+        onTerritoryDeleted(territoryId);
+      }
+      layerIdMap.delete(layer);
+    });
+
+    if (deletedIds.size > 0) {
+      setTerritories(prev => prev.filter(t => !deletedIds.has(t.id)));
+    }
+  }, [onTerritoryDeleted, layerIdMap]);
+
+  const editControl = useMemo(() => (
+    <EditControl
+      position="topright"
+      onCreated={handleCreated}
+      onEdited={handleEdited as any}
+      onDeleted={handleDeleted as any}
+      draw={{
+        rectangle: true,
+        polygon: true,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+        polyline: false,
+      }}
+    />
+  ), [handleCreated, handleEdited, handleDeleted]);
+
+  return (
+    <MapContainer
+      center={DEFAULT_CENTER}
+      zoom={DEFAULT_ZOOM}
+      style={{ height: '80vh', width: '100%' }}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='© <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+      />
+      <FeatureGroup ref={featureGroupRef}>
+        {editControl}
+      </FeatureGroup>
+    </MapContainer>
+  );
+};
+
+export default MapComponent;

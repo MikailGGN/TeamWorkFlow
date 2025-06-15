@@ -110,6 +110,20 @@ export const canvasserActivities = pgTable("canvasser_activities", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const turfs = pgTable("turfs", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  geojson: jsonb("geojson").notNull(),
+  color: text("color").notNull(),
+  teamId: integer("team_id").references(() => teams.id),
+  status: text("status").default("active"),
+  assignedDate: timestamp("assigned_date"),
+  completedDate: timestamp("completed_date"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
@@ -117,6 +131,7 @@ export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, creat
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, completedAt: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
 export const insertCanvasserActivitySchema = createInsertSchema(canvasserActivities).omit({ id: true, createdAt: true });
+export const insertTurfSchema = createInsertSchema(turfs).omit({ id: true, createdAt: true });
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -153,5 +168,7 @@ export type Attendance = typeof attendance.$inferSelect;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type CanvasserActivity = typeof canvasserActivities.$inferSelect;
 export type InsertCanvasserActivity = z.infer<typeof insertCanvasserActivitySchema>;
+export type Turf = typeof turfs.$inferSelect;
+export type InsertTurf = z.infer<typeof insertTurfSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
