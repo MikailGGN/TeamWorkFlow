@@ -71,6 +71,24 @@ export interface IStorage {
   createCanvasserProductivity(productivity: InsertCanvasserProductivity): Promise<CanvasserProductivity>;
   updateCanvasserProductivity(canvasserId: string, date: string, productivity: Partial<InsertCanvasserProductivity>): Promise<CanvasserProductivity | undefined>;
   getDailyProductivity(date: string): Promise<(CanvasserProductivity & { profile: Profile })[]>;
+
+  // Activity Planner
+  getActivityPlanner(): Promise<ActivityPlanner[]>;
+  createActivityPlanner(activity: InsertActivityPlanner): Promise<ActivityPlanner>;
+
+  // OKR Targets
+  getOkrTarget(id: number): Promise<OkrTarget | undefined>;
+  createOkrTarget(target: InsertOkrTarget): Promise<OkrTarget>;
+  getAllOkrTargets(): Promise<OkrTarget[]>;
+
+  // OKR Actuals
+  createOkrActual(actual: InsertOkrActual): Promise<OkrActual>;
+  getAllOkrActuals(): Promise<OkrActual[]>;
+
+  // Sales Metrics
+  createSalesMetric(metric: InsertSalesMetric): Promise<SalesMetric>;
+  getAllSalesMetrics(): Promise<SalesMetric[]>;
+  getSalesMetricsByPeriod(period: string): Promise<SalesMetric[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -82,6 +100,10 @@ export class MemStorage implements IStorage {
   private profiles: Map<string, Profile> = new Map();
   private turfs: Map<number, Turf> = new Map();
   private productivity: Map<string, CanvasserProductivity> = new Map();
+  private activities: Map<number, ActivityPlanner> = new Map();
+  private okrTargets: Map<number, OkrTarget> = new Map();
+  private okrActuals: Map<number, OkrActual> = new Map();
+  private salesMetrics: Map<number, SalesMetric> = new Map();
   
   private userIdSeq = 1;
   private teamIdSeq = 1;
@@ -90,6 +112,10 @@ export class MemStorage implements IStorage {
   private attendanceIdSeq = 1;
   private turfIdSeq = 1;
   private productivityIdSeq = 1;
+  private activityIdSeq = 1;
+  private okrTargetIdSeq = 1;
+  private okrActualIdSeq = 1;
+  private salesMetricIdSeq = 1;
 
   constructor() {
     // Create default admin user

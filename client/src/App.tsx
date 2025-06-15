@@ -15,6 +15,7 @@ import CanvasserApproval from "@/pages/CanvasserApproval";
 import TurfMapping from "@/pages/TurfMapping";
 import EngagementHeatmap from "@/pages/EngagementHeatmap";
 import DailyCanvasserList from "@/pages/DailyCanvasserList";
+import OKRDashboard from "@/pages/OKRDashboard";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/turf-mapping" component={() => <ProtectedRoute component={TurfMapping} />} />
       <Route path="/engagement-heatmap" component={() => <ProtectedRoute component={EngagementHeatmap} />} />
       <Route path="/daily-canvasser-list" component={() => <ProtectedRoute component={DailyCanvasserList} />} />
+      <Route path="/okr-dashboard" component={() => <ProtectedRoute component={OKRDashboard} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route path="/GadsReporting" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route component={NotFound} />
