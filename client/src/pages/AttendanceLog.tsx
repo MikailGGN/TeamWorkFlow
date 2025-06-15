@@ -9,20 +9,42 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { TableLoading } from "@/components/ui/loading";
-import { Plus, Clock, User, Calendar } from "lucide-react";
+import { Plus, Clock, User, Calendar, Filter } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Attendance, InsertAttendance, User as UserType } from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
+import moment from "moment";
 
-interface AttendanceWithUser extends Attendance {
-  user: UserType;
+interface TimeClockEntry {
+  id: string;
+  date: string;
+  time: string;
+  type: string;
+  location?: any;
+  employees: {
+    fullnames: string;
+    mobile_number: string;
+    employee_id: string;
+    role: string;
+  };
 }
+
+// Initialize Supabase client with environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Create Supabase client only if both URL and key are available
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 export default function AttendanceLog() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [timeRange, setTimeRange] = useState({
+    start: moment().subtract(7, 'days'),
+    end: moment()
+  });
   
   const [formData, setFormData] = useState({
     userId: "",
@@ -33,16 +55,35 @@ export default function AttendanceLog() {
     notes: ""
   });
 
-  const { data: attendance, isLoading: attendanceLoading } = useQuery<AttendanceWithUser[]>({
-    queryKey: ["/api/attendance", selectedDate],
+  const { data: attendance, isLoading: attendanceLoading } = useQuery<TimeClockEntry[]>({
+    queryKey: ["/api/time-clocked", timeRange.start.format('YYYY-MM-DD'), timeRange.end.format('YYYY-MM-DD')],
     queryFn: async () => {
-      const response = await fetch(`/api/attendance${selectedDate ? `?date=${selectedDate}` : ''}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch attendance');
-      return response.json();
+      if (!supabase) {
+        throw new Error('Supabase client not configured. Please check your environment variables.');
+      }
+
+      const { data, error } = await supabase
+        .from('time_clocked')
+        .select(`
+          *,
+          employees:email (
+            fullnames,
+            mobile_number,
+            employee_id,
+            role
+          )
+        `)
+        .eq('type', 'Clock In')
+        .gte('date', timeRange.start.format('YYYY-MM-DD'))
+        .lte('date', timeRange.end.format('YYYY-MM-DD'))
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error('Failed to fetch attendance data');
+      }
+
+      return data || [];
     }
   });
 
@@ -145,11 +186,25 @@ export default function AttendanceLog() {
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-slate-500" />
+                  <Filter className="w-4 h-4 text-slate-500" />
+                  <Label className="text-sm font-medium">From:</Label>
                   <Input
                     type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    value={timeRange.start.format('YYYY-MM-DD')}
+                    onChange={(e) => setTimeRange(prev => ({
+                      ...prev,
+                      start: moment(e.target.value)
+                    }))}
+                    className="w-40"
+                  />
+                  <Label className="text-sm font-medium">To:</Label>
+                  <Input
+                    type="date"
+                    value={timeRange.end.format('YYYY-MM-DD')}
+                    onChange={(e) => setTimeRange(prev => ({
+                      ...prev,
+                      end: moment(e.target.value)
+                    }))}
                     className="w-40"
                   />
                 </div>
@@ -263,12 +318,12 @@ export default function AttendanceLog() {
                     <thead className="bg-slate-50">
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Employee</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Employee ID</th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Check In</th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Check Out</th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Hours</th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Notes</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Clock In Time</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Role</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Mobile</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Location</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -281,44 +336,33 @@ export default function AttendanceLog() {
                                   <User className="w-4 h-4 text-slate-600" />
                                 </div>
                                 <div>
-                                  <p className="font-medium text-slate-900">{record.user.name}</p>
-                                  <p className="text-sm text-slate-500">{record.user.email}</p>
+                                  <p className="font-medium text-slate-900">{record.employees?.fullnames || 'Unknown'}</p>
+                                  <p className="text-sm text-slate-500">ID: {record.employees?.employee_id || 'N/A'}</p>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-900">
-                              {new Date(record.date).toLocaleDateString()}
+                              {record.employees?.employee_id || 'N/A'}
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-900">
-                              {record.checkIn ? (
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="w-4 h-4 text-green-500" />
-                                  <span>{new Date(record.checkIn).toLocaleTimeString()}</span>
-                                </div>
-                              ) : (
-                                "Not recorded"
-                              )}
+                              {moment(record.date).format('MMM DD, YYYY')}
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-900">
-                              {record.checkOut ? (
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="w-4 h-4 text-red-500" />
-                                  <span>{new Date(record.checkOut).toLocaleTimeString()}</span>
-                                </div>
-                              ) : (
-                                "Not recorded"
-                              )}
+                              <div className="flex items-center space-x-1">
+                                <Clock className="w-4 h-4 text-green-500" />
+                                <span>{record.time || 'Not recorded'}</span>
+                              </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-900">
-                              {calculateHours(record.checkIn, record.checkOut)}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Badge className={getStatusColor(record.status)}>
-                                {record.status}
+                              <Badge variant="outline" className="capitalize">
+                                {record.employees?.role || 'N/A'}
                               </Badge>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-900">
-                              {record.notes || "No notes"}
+                              {record.employees?.mobile_number || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-900">
+                              {record.location ? JSON.stringify(record.location) : 'Not specified'}
                             </td>
                           </tr>
                         ))
