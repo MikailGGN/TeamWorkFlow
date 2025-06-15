@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,20 @@ export default function CreateTeam() {
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showCanvasserDialog, setShowCanvasserDialog] = useState(false);
+  const [storedCanvassersCount, setStoredCanvassersCount] = useState(0);
+
+  // Update stored canvassers count on component mount and form submissions
+  useEffect(() => {
+    const updateCount = () => {
+      const stored = getStoredCanvassers();
+      const pending = stored.filter((c: any) => c.status === 'pending').length;
+      setStoredCanvassersCount(pending);
+    };
+    
+    updateCount();
+    const interval = setInterval(updateCount, 5000); // Update every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Activity type and channel mapping
   const activityChannels = {
@@ -393,13 +407,28 @@ export default function CreateTeam() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <Users className="w-6 h-6 text-primary-600" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-100 rounded-lg">
+                    <Users className="w-6 h-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Team Management Center</h1>
+                    <p className="text-gray-600">Create teams and register canvassers for field operations</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Team Management Center</h1>
-                  <p className="text-gray-600">Create teams and register canvassers for field operations</p>
+                <div className="text-center">
+                  <Link href="/canvasser-approval">
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4" />
+                      Pending Approvals
+                      {storedCanvassersCount > 0 && (
+                        <Badge variant="destructive" className="ml-1">
+                          {storedCanvassersCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
