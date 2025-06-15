@@ -1,0 +1,209 @@
+import  { useEffect, useState, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Paper,
+  Typography,
+  Box,
+  CircularProgress,
+  Alert,
+  Button,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  AppBar,
+  Toolbar,
+} from '@mui/material';
+import { supabase } from '../supabaseClient';
+import { Logout } from "@mui/icons-material";
+import logo from "../assets/TP_.png";
+import dayjs from 'dayjs';
+import 'leaflet/dist/leaflet.css';
+//import "leaflet";
+import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+
+// Fix Leaflet marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const MAP_PROVIDERS = {
+  OPENSTREETMAP: {
+    name: 'OpenStreetMap',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+  CARTO_DARK: {
+    name: 'CartoDB Dark',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+};
+
+type ClockInRecord = {
+  useremail: string;
+  location: string;
+  date: string;
+  time: string;
+};
+
+
+
+
+
+const ExecutivesMap: React.FC = () => {
+  const navigate = useNavigate();
+  const [clockInData, setClockInData] = useState<ClockInRecord[]>([]);
+  //const [clockInData, setClockInData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mapProvider, setMapProvider] = useState<'OPENSTREETMAP' | 'CARTO_DARK'>('OPENSTREETMAP');
+  const today = dayjs().format('YYYY-MM-DD');
+
+  const fetchTodayClockIns = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('time_clocked')
+        .select('useremail, location, date, time')
+        .eq('type', 'Clock In')
+        .eq('date', today);
+
+      if (error) throw error;
+      setClockInData(data || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load data');
+      console.error("Error fetching today's clock-ins:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodayClockIns();
+  }, []);
+
+  const parseLocation = (location: string) => {
+    try {
+      const [latStr, lngStr] = location.split(',');
+      const lat = parseFloat(latStr.trim());
+      const lng = parseFloat(lngStr.trim());
+      return isNaN(lat) || isNaN(lng) ? null : { lat, lng };
+    } catch {
+      return null;
+    }
+  };
+
+  const calculateMapCenter = (): [number, number] => {
+    const validCoords = clockInData
+      .map((item: any) => parseLocation(item.location))
+      .filter((coord): coord is { lat: number; lng: number } => coord !== null);
+
+    if (validCoords.length === 0) return [6.45407, 3.39467];
+
+    const sum = validCoords.reduce(
+      (acc, coord) => ({ lat: acc.lat + coord.lat, lng: acc.lng + coord.lng }),
+      { lat: 0, lng: 0 }
+    );
+
+    return [sum.lat / validCoords.length, sum.lng / validCoords.length];
+  };
+
+  const renderMarkers = () =>
+    clockInData.map((item: any, index) => {
+      const coords = parseLocation(item.location);
+      if (!coords) return null;
+
+      return (
+        <Marker key={`${index}-${coords.lat}-${coords.lng}`} position={[coords.lat, coords.lng]}>
+          <Popup>
+            <Box sx={{ p: 1 }}>
+              <Typography variant="subtitle2">{item.useremail}</Typography>
+              <Typography variant="body2">Time: {item.time}</Typography>
+              <Typography variant="caption" display="block">
+                {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+              </Typography>
+            </Box>
+          </Popup>
+        </Marker>
+      );
+    });
+
+  return (
+    <Box sx={{ display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
+      justifyContent: 'flex-start'}}>
+      <AppBar position="static">
+        <Toolbar>
+          <img src={logo} alt="taskpulse" onClick={() => navigate("/dashboard")} style={{ height: 40 }} />
+          <Typography variant="h6" sx={{ flexGrow: 1 }} />
+          <Button color="inherit" startIcon={<Logout />} onClick={() => navigate("/")}>Logout</Button>
+        </Toolbar>
+      </AppBar>
+
+      <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h5" gutterBottom>
+          Today's Clock-In Locations ({today})
+        </Typography>
+
+        <Box display="flex" gap={2} mb={2} flexWrap="wrap">
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Map Style</InputLabel>
+            <Select
+              value={mapProvider}
+              onChange={(e) => setMapProvider(e.target.value as 'OPENSTREETMAP' | 'CARTO_DARK')}
+              label="Map Style"
+            >
+              {Object.entries(MAP_PROVIDERS).map(([key, provider]) => (
+                <MenuItem key={key} value={key}>{provider.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button variant="contained" onClick={fetchTodayClockIns} disabled={isLoading}>
+            {isLoading ? 'Refreshing...' : 'Refresh Data'}
+          </Button>
+        </Box>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        )}
+
+        <Box sx={{ flex: 1, position: 'relative', minHeight: '500px' }}>
+          {isLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+              <CircularProgress size={60} />
+              <Typography variant="body1" sx={{ ml: 2 }}>Loading map data...</Typography>
+            </Box>
+          ) : (
+            <Suspense fallback={<CircularProgress />}>
+              <MapContainer 
+                center={calculateMapCenter()} 
+                zoom={7} 
+                style={{ height: '100%', width: '100%', minHeight: '500px' }}
+              >
+                <TileLayer 
+                  url={MAP_PROVIDERS[mapProvider].url} 
+                  attribution={MAP_PROVIDERS[mapProvider].attribution} 
+                />
+                {renderMarkers()}
+              </MapContainer>
+            </Suspense>
+          )}
+        </Box>
+      </Paper>
+    </Box>
+  );
+};
+
+export default ExecutivesMap;

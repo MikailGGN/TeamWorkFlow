@@ -500,6 +500,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get canvasser engagement data for heatmap
+  app.get("/api/canvassers/engagement", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const profiles = await storage.getAllProfiles();
+      const canvasserActivities = await storage.getCanvasserActivities();
+      
+      const engagementData = profiles
+        .filter(profile => profile.role === 'canvasser')
+        .map(profile => {
+          // Get activities for this canvasser
+          const activities = canvasserActivities.filter(activity => 
+            activity.canvasserId === profile.id
+          );
+          
+          // Calculate engagement score based on activities
+          const totalActivities = activities.length;
+          const recentActivities = activities.filter(activity => {
+            const activityDate = new Date(activity.createdAt || '');
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return activityDate >= thirtyDaysAgo;
+          }).length;
+          
+          // Simple engagement calculation: recent activity frequency
+          const engagementScore = Math.min(100, (recentActivities * 10) + (totalActivities * 2));
+          
+          // Parse location if available
+          let location = null;
+          if (profile.location && typeof profile.location === 'object') {
+            const loc = profile.location as any;
+            if (loc.latitude && loc.longitude) {
+              location = {
+                latitude: parseFloat(loc.latitude),
+                longitude: parseFloat(loc.longitude)
+              };
+            }
+          }
+          
+          return {
+            id: profile.id,
+            email: profile.email,
+            full_name: profile.fullName || profile.email,
+            location,
+            engagement_score: Math.round(engagementScore),
+            activities_count: totalActivities,
+            last_active: activities.length > 0 
+              ? activities.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())[0].createdAt
+              : profile.createdAt,
+            status: profile.approvalStatus || 'pending'
+          };
+        });
+      
+      res.json(engagementData);
+    } catch (error) {
+      console.error("Error fetching canvasser engagement data:", error);
+      res.status(500).json({ error: "Failed to fetch engagement data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
