@@ -1,0 +1,87 @@
+import { Link, useLocation } from "wouter";
+import { 
+  BarChart3, 
+  CheckSquare, 
+  Users, 
+  Clock, 
+  UserCog, 
+  TrendingUp,
+  LogOut,
+  User
+} from "lucide-react";
+import { authManager } from "@/lib/auth";
+
+const navigationItems = [
+  { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { path: "/tasks", label: "Task Management", icon: CheckSquare },
+  { path: "/teams", label: "Team Management", icon: Users },
+  { path: "/attendance", label: "Attendance Log", icon: Clock },
+  { path: "/users", label: "User Management", icon: UserCog },
+  { path: "/reports", label: "GADS Reporting", icon: TrendingUp },
+];
+
+export function Sidebar() {
+  const [location] = useLocation();
+  const user = authManager.getUser();
+
+  const handleSignOut = () => {
+    authManager.signOut();
+    window.location.href = "/";
+  };
+
+  return (
+    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <div className="p-6 border-b border-slate-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+            <BarChart3 className="text-white w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="font-bold text-slate-900">Dashboard</h2>
+            <p className="text-xs text-slate-500">Enterprise Suite</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav className="flex-1 p-4">
+        <div className="space-y-2">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location === item.path;
+            
+            return (
+              <Link key={item.path} href={item.path}>
+                <a className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? "bg-primary-50 text-primary-700 font-medium" 
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}>
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </a>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+      
+      <div className="p-4 border-t border-slate-200">
+        <div className="flex items-center space-x-3 px-3 py-2">
+          <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-slate-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-slate-900">{user?.name || "User"}</p>
+            <p className="text-xs text-slate-500 capitalize">{user?.role || "Member"}</p>
+          </div>
+          <button 
+            onClick={handleSignOut}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}

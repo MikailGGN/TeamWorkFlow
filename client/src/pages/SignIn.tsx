@@ -1,0 +1,107 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BarChart3 } from "lucide-react";
+import { authManager } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+
+export function SignIn() {
+  const [, setLocation] = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const result = await authManager.signIn(email, password);
+    
+    if (result.success) {
+      setLocation("/dashboard");
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
+    } else {
+      toast({
+        title: "Sign in failed",
+        description: result.error || "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="p-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="text-white text-2xl w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Enterprise Dashboard</h1>
+            <p className="text-slate-600 mt-2">Sign in to your account</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label className="block text-sm font-medium text-slate-700 mb-2">
+                Email Address
+              </Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label className="block text-sm font-medium text-slate-700 mb-2">
+                Password
+              </Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                required
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" />
+                <Label htmlFor="remember" className="text-sm text-slate-600">
+                  Remember me
+                </Label>
+              </div>
+              <a href="#" className="text-sm text-primary-600 hover:text-primary-700">
+                Forgot password?
+              </a>
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

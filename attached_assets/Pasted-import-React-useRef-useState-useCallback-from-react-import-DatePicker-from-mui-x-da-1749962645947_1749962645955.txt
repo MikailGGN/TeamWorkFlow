@@ -1,0 +1,667 @@
+import React, { useRef, useState, useCallback } from 'react';
+import { DatePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Checkbox,
+  Box,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Tabs,
+  Tab,
+  Paper,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
+  Card,
+  CardContent,
+  Divider,
+  Chip
+} from '@mui/material';
+import { CameraAlt, LocationOn, Check, Close, Delete } from '@mui/icons-material';
+import Webcam from 'react-webcam';
+import { supabase } from '../supabaseClient';
+
+type ActivityType = 'MEGA' | 'MIDI' | 'MINI' | 'Other';
+
+interface Canvasser {
+  id: string;
+  name: string;
+}
+
+interface RegisteredCanvasser {
+  id: string;
+  fullName: string;
+  phone: string;
+  nin: string;
+  smartCashAccount: string;
+  photo: string | null;
+  status: 'Pending' | 'Approved' | 'Rejected';
+}
+
+interface Location {
+  lat: number;
+  lng: number;
+  timestamp?: number;
+}
+
+const CHANNEL_OPTIONS: Record<ActivityType, string[]> = {
+  MEGA: ['Social Media', 'TV', 'Radio', 'Billboard'],
+  MIDI: ['Social Media', 'Radio', 'Flyers'],
+  MINI: ['Social Media', 'Flyers'],
+  Other: []
+};
+
+const CreateTeam = () => {
+  // State management
+  const [date, setDate] = useState<Date>(new Date());
+  const [activityType, setActivityType] = useState<ActivityType>('MEGA');
+  const [channel, setChannel] = useState<string>(CHANNEL_OPTIONS['MEGA'][0]);
+  const [customChannel, setCustomChannel] = useState('');
+  const [description, setDescription] = useState('');
+  const [canvassers, setCanvassers] = useState<Canvasser[]>([]);
+  const [newCanvasser, setNewCanvasser] = useState('');
+  const [activeTab, setActiveTab] = useState<'add' | 'remove'>('add');
+  const [location, setLocation] = useState<Location | null>(null);
+  const [locationError, setLocationError] = useState<string>('');
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [canvasserPhoto, setCanvasserPhoto] = useState<string | null>(null);
+  const [registeredCanvassers, setRegisteredCanvassers] = useState<RegisteredCanvasser[]>([]);
+  const [selectionModel, setSelectionModel] = useState<(string | number)[]>([]);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+  });
+
+  // Refs
+  const webcamRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Derived state
+  const selectedCanvassers = registeredCanvassers.filter((_, index) => 
+    selectionModel.includes(index)
+  );
+
+  // Utility functions
+  const dataURLtoBinary = useCallback((dataUrl: string): ArrayBuffer => {
+    const byteString = atob(dataUrl.split(',')[1]);
+    const arrayBuffer = new ArrayBuffer(byteString.length);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    for (let i = 0; i < byteString.length; i++) {
+      uint8Array[i] = byteString.charCodeAt(i);
+    }
+    
+    return arrayBuffer;
+  }, []);
+
+  const handleCapture = useCallback((): void => {
+    if (!canvasRef.current) return;
+
+    const dataUrl = canvasRef.current.toDataURL('image/png');
+    const binaryData = dataURLtoBinary(dataUrl);
+    console.log('Binary Data:', binaryData);
+    
+    setCanvasserPhoto(dataUrl);
+    
+    // Save to localStorage
+    const activities = JSON.parse(localStorage.getItem('offlineActivities') || '[]');
+    const currentActivity = activities[activities.length - 1];
+    
+    if (currentActivity) {
+      currentActivity.photo = dataUrl;
+      localStorage.setItem('offlineActivities', JSON.stringify(activities));
+    }
+  }, [dataURLtoBinary]);
+
+  const capturePhoto = useCallback((): void => {
+    if (!webcamRef.current || !canvasRef.current || !location) return;
+
+    const context = canvasRef.current.getContext("2d");
+    if (!context) return;
+
+    context.drawImage(webcamRef.current.video!, 0, 0, 400, 300);
+    
+    const currentDate = new Date().toLocaleString();
+    context.font = "20px Arial";
+    context.fillStyle = "white";
+    context.fillText(`Lat: ${location.lat.toFixed(4)}`, 10, 20);
+    context.fillText(`Lng: ${location.lng.toFixed(4)}`, 10, 50);
+    context.fillText(`Date: ${currentDate}`, 10, 80);
+    context.font = "30px Arial";
+    context.fillText("MDNL", 300, 280);
+    
+    handleCapture();
+    setShowCameraModal(false);
+    showSnackbar('Photo captured successfully!', 'success');
+  }, [handleCapture, location]);
+
+  // Canvasser management
+  const handleAddCanvasser = (): void => {
+    if (!newCanvasser.trim()) {
+      showSnackbar('Please enter a canvasser name', 'error');
+      return;
+    }
+
+    setCanvassers([
+      ...canvassers, 
+      { 
+        id: Date.now().toString(), 
+        name: newCanvasser.trim() 
+      }
+    ]);
+    setNewCanvasser('');
+    showSnackbar('Canvasser added successfully', 'success');
+  };
+
+  const handleRemoveCanvasser = (id: string): void => {
+    setCanvassers(canvassers.filter(c => c.id !== id));
+    showSnackbar('Canvasser removed', 'info');
+  };
+
+  // Location handling
+  const getCurrentLocation = (): void => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          timestamp: position.timestamp
+        });
+        setLocationError('');
+        showSnackbar('Location captured successfully!', 'success');
+      },
+      (error) => {
+        setLocationError(error.message);
+        showSnackbar('Failed to get location: ' + error.message, 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // Activity creation
+  const handleActivityCreate = (): void => {
+    if (!location) {
+      showSnackbar('Please capture location first', 'error');
+      return;
+    }
+
+    const activityData = {
+      date,
+      activityType,
+      channel: activityType === 'Other' ? customChannel : channel,
+      description,
+      location,
+      canvassers
+    };
+
+    console.log('Creating activity with:', activityData);
+    
+    // Save to localStorage for offline use
+    const activities = JSON.parse(localStorage.getItem('offlineActivities') || '[]');
+    activities.push(activityData);
+    localStorage.setItem('offlineActivities', JSON.stringify(activities));
+    
+    showSnackbar('Activity saved (offline)', 'success');
+  };
+
+  const handleSelect = (id: string | number) => {
+    setSelectionModel((prev) =>
+      prev.includes(id)
+        ? prev.filter((selectedId) => selectedId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const isSelected = (id: string | number) => selectionModel.includes(id);
+
+  // Approval handling
+  const handleApprove = (): void => {
+    if (selectionModel.length === 0) {
+      showSnackbar('Please select at least one canvasser', 'error');
+      return;
+    }
+    setShowApprovalModal(true);
+  };
+
+  const confirmApproval = async (): Promise<void> => {
+    try {
+      // Prepare data for batch insert
+      const approvals = selectionModel.map(id => ({
+        canvasser_id: registeredCanvassers[id as number].id,
+        approved_by: null, // TODO: Replace with actual user ID
+        approved_at: new Date().toISOString(),
+        activity_id: null // TODO: Add activity ID
+      }));
+
+      // Save approved canvassers to Supabase
+      const { data, error } = await supabase
+        .from('approved_canvassers')
+        .insert(approvals)
+        .select();
+
+      if (error) throw error;
+      
+      // Update local state
+      const updatedCanvassers = [...registeredCanvassers];
+      selectionModel.forEach(id => {
+        updatedCanvassers[id as number].status = 'Approved';
+      });
+      setRegisteredCanvassers(updatedCanvassers);
+      
+      showSnackbar(`${data.length} canvassers approved successfully!`, 'success');
+      setShowApprovalModal(false);
+      setSelectionModel([]);
+      
+    } catch (err) {
+      console.error('Error saving approval:', err);
+      showSnackbar('Failed to approve canvassers', 'error');
+    }
+  };
+
+  const handleReject = async (id: string | number) => {
+    try {
+      const { error } = await supabase
+        .from('canvassers')
+        .update({ status: 'Rejected' })
+        .eq('id', registeredCanvassers[id as number].id);
+
+      if (error) throw error;
+
+      const updatedCanvassers = [...registeredCanvassers];
+      updatedCanvassers[id as number].status = 'Rejected';
+      setRegisteredCanvassers(updatedCanvassers);
+      
+      showSnackbar('Canvasser rejected', 'success');
+    } catch (err) {
+      console.error('Error rejecting canvasser:', err);
+      showSnackbar('Failed to reject canvasser', 'error');
+    }
+  };
+
+  // Snackbar helper
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Create Team Activity
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Activity Panel */}
+          <Card sx={{ flex: 1 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Activity Details
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <DatePicker
+                  label="Date"
+                  value={date}
+                  onChange={(newDate) => setDate(newDate || new Date())}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+
+                <TextField
+                  label="Activity Description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  multiline
+                  rows={3}
+                  fullWidth
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel>Activity Type</InputLabel>
+                  <Select
+                    value={activityType}
+                    label="Activity Type"
+                    onChange={(e) => {
+                      const type = e.target.value as ActivityType;
+                      setActivityType(type);
+                      setChannel(CHANNEL_OPTIONS[type][0] || '');
+                    }}
+                  >
+                    {Object.keys(CHANNEL_OPTIONS).map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {activityType === 'Other' ? (
+                  <TextField
+                    label="Custom Channel"
+                    value={customChannel}
+                    onChange={(e) => setCustomChannel(e.target.value)}
+                    fullWidth
+                  />
+                ) : (
+                  <FormControl fullWidth>
+                    <InputLabel>Channel</InputLabel>
+                    <Select
+                      value={channel}
+                      label="Channel"
+                      onChange={(e) => setChannel(e.target.value)}
+                    >
+                      {CHANNEL_OPTIONS[activityType].map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<LocationOn />}
+                    onClick={getCurrentLocation}
+                  >
+                    Get Location
+                  </Button>
+                  {location && (
+                    <Typography variant="body2">
+                      {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                    </Typography>
+                  )}
+                </Box>
+                {locationError && (
+                  <Typography color="error">{locationError}</Typography>
+                )}
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleActivityCreate}
+                  fullWidth
+                  sx={{ mt: 2 }}
+                >
+                  Save Activity (Offline)
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Canvasser Panel */}
+          <Card sx={{ flex: 1 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Canvasser Management
+              </Typography>
+              
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs 
+                  value={activeTab} 
+                  onChange={(_, newValue) => setActiveTab(newValue)}
+                >
+                  <Tab label="Add Canvasser" value="add" />
+                  <Tab label="Manage Canvassers" value="remove" />
+                </Tabs>
+              </Box>
+
+              <Box sx={{ pt: 2 }}>
+                {activeTab === 'add' ? (
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <TextField
+                      label="Canvasser Name"
+                      value={newCanvasser}
+                      onChange={(e) => setNewCanvasser(e.target.value)}
+                      fullWidth
+                    />
+                    <Button 
+                      variant="contained" 
+                      onClick={handleAddCanvasser}
+                      disabled={!newCanvasser.trim()}
+                    >
+                      Add
+                    </Button>
+                  </Box>
+                ) : (
+                  <Box>
+                    {canvassers.length === 0 ? (
+                      <Typography>No canvassers added yet</Typography>
+                    ) : (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {canvassers.map((canvasser) => (
+                          <Paper 
+                            key={canvasser.id} 
+                            sx={{ 
+                              p: 2, 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center'
+                            }}
+                          >
+                            <Typography>{canvasser.name}</Typography>
+                            <Button
+                              size="small"
+                              color="error"
+                              startIcon={<Delete />}
+                              onClick={() => handleRemoveCanvasser(canvasser.id)}
+                            >
+                              Remove
+                            </Button>
+                          </Paper>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Approval Panel */}
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Canvasser Approval
+            </Typography>
+            
+            <TableContainer component={Paper} elevation={2}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell padding="checkbox" />
+                    <TableCell>Name</TableCell>
+                    <TableCell>Phone</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {registeredCanvassers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <Typography align="center" color="text.secondary">
+                          No canvassers available
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    registeredCanvassers.map((canvasser) => (
+                      <TableRow
+                        key={canvasser.id}
+                        hover
+                        selected={isSelected(canvasser.id)}
+                        onClick={() => handleSelect(canvasser.id)}
+                        sx={{
+                          cursor: 'pointer',
+                          '&.Mui-selected': {
+                            backgroundColor: 'rgba(0, 123, 255, 0.08)',
+                          },
+                        }}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={isSelected(canvasser.id)}
+                            onChange={() => handleSelect(canvasser.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </TableCell>
+                        <TableCell>{canvasser.fullName}</TableCell>
+                        <TableCell>{canvasser.phone}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={canvasser.status}
+                            color={
+                              canvasser.status === 'Approved' ? 'success' : 
+                              canvasser.status === 'Rejected' ? 'error' : 'warning'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              size="small"
+                              color="success"
+                              startIcon={<Check />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectionModel([canvasser.id]);
+                                handleApprove();
+                              }}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="small"
+                              color="error"
+                              startIcon={<Close />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(canvasser.id);
+                              }}
+                            >
+                              Reject
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={handleApprove}
+                disabled={selectionModel.length === 0}
+                startIcon={<Check />}
+              >
+                Approve Selected ({selectionModel.length})
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Camera Modal */}
+        <Dialog open={showCameraModal} onClose={() => setShowCameraModal(false)}>
+          <DialogTitle>Capture Canvasser Photo</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                screenshotFormat="image/png"
+                videoConstraints={{ facingMode: 'user' }}
+                style={{ width: '100%', maxWidth: 500 }}
+              />
+              <canvas ref={canvasRef} style={{ display: 'none' }} />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowCameraModal(false)}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              onClick={capturePhoto}
+              startIcon={<CameraAlt />}
+            >
+              Capture Photo
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Approval Modal */}
+        <Dialog open={showApprovalModal} onClose={() => setShowApprovalModal(false)}>
+          <DialogTitle>Confirm Approval</DialogTitle>
+          <DialogContent>
+            <Typography gutterBottom>
+              You are about to approve {selectionModel.length} canvasser(s):
+            </Typography>
+            <ul>
+              {selectedCanvassers.map((canvasser, index) => (
+                <li key={index}>{canvasser.fullName}</li>
+              ))}
+            </ul>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              This action will be recorded in the system.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowApprovalModal(false)}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              onClick={confirmApproval}
+              startIcon={<Check />}
+            >
+              Confirm Approval
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert 
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </LocalizationProvider>
+  );
+};
+
+export default CreateTeam;
