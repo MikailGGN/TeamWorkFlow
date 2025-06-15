@@ -11,7 +11,8 @@ import {
   UserCheck,
   MapPin,
   Activity,
-  Target
+  Target,
+  Settings
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 
@@ -28,6 +29,7 @@ const navigationItems = [
   { path: "/attendance", label: "Attendance Log", icon: Clock },
   { path: "/users", label: "User Management", icon: UserCog },
   { path: "/reports", label: "GADS Reporting", icon: BarChart3 },
+  { path: "/admin-cpanel", label: "Admin CPanel", icon: Settings },
 ];
 
 export function Sidebar() {
