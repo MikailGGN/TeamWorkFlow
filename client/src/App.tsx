@@ -19,6 +19,7 @@ import EngagementHeatmap from "@/pages/EngagementHeatmap";
 import DailyCanvasserList from "@/pages/DailyCanvasserList";
 import OKRDashboard from "@/pages/OKRDashboard";
 import AdminCPanel from "@/pages/AdminCPanel";
+import CameraDemo from "@/pages/CameraDemo";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
 import { useEffect, useState } from "react";
