@@ -1,9 +1,10 @@
 import { 
-  users, teams, teamMembers, tasks, attendance, profiles, canvasserActivities,
+  users, teams, teamMembers, tasks, attendance, profiles, canvasserActivities, turfs,
   type User, type InsertUser, type Team, type InsertTeam, 
   type TeamMember, type Task, type InsertTask, 
   type Attendance, type InsertAttendance, type Profile, type InsertProfile,
-  type CanvasserActivity, type InsertCanvasserActivity, type CanvasserRegistration
+  type CanvasserActivity, type InsertCanvasserActivity, type CanvasserRegistration,
+  type Turf, type InsertTurf
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -73,12 +74,14 @@ export class MemStorage implements IStorage {
   private tasks: Map<number, Task> = new Map();
   private attendance: Map<number, Attendance> = new Map();
   private profiles: Map<string, Profile> = new Map();
+  private turfs: Map<number, Turf> = new Map();
   
   private userIdSeq = 1;
   private teamIdSeq = 1;
   private teamMemberIdSeq = 1;
   private taskIdSeq = 1;
   private attendanceIdSeq = 1;
+  private turfIdSeq = 1;
 
   constructor() {
     // Create default admin user
@@ -356,6 +359,57 @@ export class MemStorage implements IStorage {
 
   async updateCanvasserActivity(id: number, activity: Partial<InsertCanvasserActivity>): Promise<CanvasserActivity | undefined> {
     return undefined;
+  }
+
+  // Turf Management
+  async getTurf(id: number): Promise<Turf | undefined> {
+    return this.turfs.get(id);
+  }
+
+  async createTurf(insertTurf: InsertTurf): Promise<Turf> {
+    const id = this.turfIdSeq++;
+    const turf: Turf = { 
+      ...insertTurf, 
+      id,
+      createdAt: new Date(),
+      status: insertTurf.status || 'active',
+      assignedDate: insertTurf.assignedDate || null,
+      completedDate: insertTurf.completedDate || null,
+      description: insertTurf.description || null,
+      teamId: insertTurf.teamId || null
+    };
+    this.turfs.set(id, turf);
+    return turf;
+  }
+
+  async updateTurf(id: number, updateData: Partial<InsertTurf>): Promise<Turf | undefined> {
+    const existingTurf = this.turfs.get(id);
+    if (!existingTurf) return undefined;
+
+    const updatedTurf: Turf = { 
+      ...existingTurf, 
+      ...updateData,
+      id: existingTurf.id,
+      createdAt: existingTurf.createdAt
+    };
+    this.turfs.set(id, updatedTurf);
+    return updatedTurf;
+  }
+
+  async deleteTurf(id: number): Promise<boolean> {
+    return this.turfs.delete(id);
+  }
+
+  async getAllTurfs(): Promise<Turf[]> {
+    return Array.from(this.turfs.values());
+  }
+
+  async getTurfsByTeam(teamId: number): Promise<Turf[]> {
+    return Array.from(this.turfs.values()).filter(turf => turf.teamId === teamId);
+  }
+
+  async getTurfsByCreator(createdBy: number): Promise<Turf[]> {
+    return Array.from(this.turfs.values()).filter(turf => turf.createdBy === createdBy);
   }
 }
 
