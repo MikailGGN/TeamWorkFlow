@@ -150,6 +150,50 @@ export const activityPlanner = pgTable("activity_planner", {
   updatedAt: timestamp("updated_at").defaultNow()
 });
 
+export const okrTargets = pgTable("okr_targets", {
+  id: serial("id").primaryKey(),
+  period: text("period").notNull(), // Q1 2024, Q2 2024, etc.
+  teamId: integer("team_id").references(() => teams.id),
+  faeId: text("fae_id").references(() => employees.id),
+  region: text("region").notNull(),
+  activityType: text("activity_type").notNull(),
+  channel: text("channel").notNull(),
+  expectedSales: decimal("expected_sales", { precision: 12, scale: 2 }).notNull(),
+  targetUnits: integer("target_units").notNull(),
+  targetRevenue: decimal("target_revenue", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const okrActuals = pgTable("okr_actuals", {
+  id: serial("id").primaryKey(),
+  okrTargetId: integer("okr_target_id").references(() => okrTargets.id).notNull(),
+  period: text("period").notNull(),
+  actualSales: decimal("actual_sales", { precision: 12, scale: 2 }).notNull(),
+  actualUnits: integer("actual_units").notNull(),
+  actualRevenue: decimal("actual_revenue", { precision: 12, scale: 2 }).notNull(),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const salesMetrics = pgTable("sales_metrics", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id),
+  faeId: text("fae_id").references(() => employees.id),
+  region: text("region").notNull(),
+  activityType: text("activity_type").notNull(),
+  channel: text("channel").notNull(),
+  period: text("period").notNull(),
+  salesAmount: decimal("sales_amount", { precision: 12, scale: 2 }).notNull(),
+  unitsWon: integer("units_won").notNull(),
+  revenue: decimal("revenue", { precision: 12, scale: 2 }).notNull(),
+  conversionRate: decimal("conversion_rate", { precision: 5, scale: 2 }),
+  customerAcquisitionCost: decimal("customer_acquisition_cost", { precision: 10, scale: 2 }),
+  recordedDate: timestamp("recorded_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
@@ -160,6 +204,9 @@ export const insertCanvasserActivitySchema = createInsertSchema(canvasserActivit
 export const insertTurfSchema = createInsertSchema(turfs).omit({ id: true, createdAt: true });
 export const insertCanvasserProductivitySchema = createInsertSchema(canvasserProductivity).omit({ id: true, createdAt: true, lastUpdated: true });
 export const insertActivityPlannerSchema = createInsertSchema(activityPlanner).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOkrTargetSchema = createInsertSchema(okrTargets).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOkrActualSchema = createInsertSchema(okrActuals).omit({ id: true, createdAt: true, updatedAt: true, recordedAt: true });
+export const insertSalesMetricSchema = createInsertSchema(salesMetrics).omit({ id: true, createdAt: true });
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -202,5 +249,11 @@ export type CanvasserProductivity = typeof canvasserProductivity.$inferSelect;
 export type InsertCanvasserProductivity = z.infer<typeof insertCanvasserProductivitySchema>;
 export type ActivityPlanner = typeof activityPlanner.$inferSelect;
 export type InsertActivityPlanner = z.infer<typeof insertActivityPlannerSchema>;
+export type OkrTarget = typeof okrTargets.$inferSelect;
+export type InsertOkrTarget = z.infer<typeof insertOkrTargetSchema>;
+export type OkrActual = typeof okrActuals.$inferSelect;
+export type InsertOkrActual = z.infer<typeof insertOkrActualSchema>;
+export type SalesMetric = typeof salesMetrics.$inferSelect;
+export type InsertSalesMetric = z.infer<typeof insertSalesMetricSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
