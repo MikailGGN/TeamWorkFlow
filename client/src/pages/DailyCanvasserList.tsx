@@ -134,19 +134,19 @@ export default function DailyCanvasserList() {
   };
 
   const getKitStatusBadge = (status: string) => {
-    const variants = {
-      assigned: { className: "bg-green-100 text-green-800", icon: CheckCircle },
-      returned: { className: "bg-blue-100 text-blue-800", icon: Package },
-      missing: { className: "bg-red-100 text-red-800", icon: AlertTriangle },
-      damaged: { className: "bg-orange-100 text-orange-800", icon: XCircle }
+    const statusConfig = {
+      assigned: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+      returned: { color: "bg-blue-100 text-blue-800", icon: Package },
+      missing: { color: "bg-red-100 text-red-800", icon: AlertTriangle },
+      damaged: { color: "bg-orange-100 text-orange-800", icon: XCircle }
     };
     
-    const config = variants[status as keyof typeof variants] || variants.assigned;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.assigned;
     const Icon = config.icon;
     
     return (
-      <Badge className={config.className}>
-        <Icon className="w-3 h-3 mr-1" />
+      <Badge className={`${config.color} flex items-center gap-1`}>
+        <Icon className="w-3 h-3" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
@@ -185,6 +185,18 @@ export default function DailyCanvasserList() {
                 <SelectItem value="poor">Poor</SelectItem>
               </SelectContent>
             </Select>
+          ) : field === 'kitStatus' ? (
+            <Select value={tempValue} onValueChange={setTempValue}>
+              <SelectTrigger className="min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="assigned">Assigned</SelectItem>
+                <SelectItem value="returned">Returned</SelectItem>
+                <SelectItem value="missing">Missing</SelectItem>
+                <SelectItem value="damaged">Damaged</SelectItem>
+              </SelectContent>
+            </Select>
           ) : (
             <Input
               value={tempValue}
@@ -208,7 +220,11 @@ export default function DailyCanvasserList() {
         className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded"
         onClick={() => handleCellEdit(canvasser.id, field, value)}
       >
-        <span>{field === 'performanceRating' ? getPerformanceBadge(String(value)) : value}</span>
+        <span>
+          {field === 'performanceRating' ? getPerformanceBadge(String(value)) : 
+           field === 'kitStatus' ? getKitStatusBadge(String(value)) : 
+           value}
+        </span>
         <Edit2 className="w-3 h-3 text-slate-400" />
       </div>
     );
@@ -418,6 +434,12 @@ export default function DailyCanvasserList() {
                           <Badge variant={canvasser.status === 'approved' ? 'default' : 'secondary'}>
                             {canvasser.status}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(canvasser, 'kitId', canvasser.kitId || 'Not Assigned')}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(canvasser, 'kitStatus', canvasser.kitStatus || 'assigned')}
                         </TableCell>
                         <TableCell>
                           {renderEditableCell(canvasser, 'dailyTarget', canvasser.dailyTarget)}
