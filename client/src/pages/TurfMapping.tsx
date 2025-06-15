@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
 import L, { type LeafletEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.draw/dist/leaflet.draw.css';
 import { EditControl } from 'react-leaflet-draw';
 import { v4 as uuidv4 } from 'uuid';
 import { useMutation, useQuery } from '@tanstack/react-query';

@@ -433,6 +433,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Turf Management
+  app.get("/api/turfs", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const turfs = await storage.getAllTurfs();
+      res.json(turfs);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch turfs" });
+    }
+  });
+
+  app.post("/api/turfs", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { name, description, geojson, color, teamId, status } = req.body;
+      
+      if (!name || !geojson || !color) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const turfData = {
+        name,
+        description: description || null,
+        geojson,
+        color,
+        teamId: teamId ? parseInt(teamId) : null,
+        status: status || 'active',
+        createdBy: req.user!.id
+      };
+      
+      const turf = await storage.createTurf(turfData);
+      res.status(201).json(turf);
+    } catch (error: any) {
+      console.error('Turf creation error:', error);
+      res.status(400).json({ message: error.message || "Failed to create turf" });
+    }
+  });
+
+  app.put("/api/turfs/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const turfId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      const updatedTurf = await storage.updateTurf(turfId, updateData);
+      if (!updatedTurf) {
+        return res.status(404).json({ message: "Turf not found" });
+      }
+      
+      res.json(updatedTurf);
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to update turf" });
+    }
+  });
+
+  app.delete("/api/turfs/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const turfId = parseInt(req.params.id);
+      const deleted = await storage.deleteTurf(turfId);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Turf not found" });
+      }
+      
+      res.json({ message: "Turf deleted successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to delete turf" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
