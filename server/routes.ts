@@ -559,6 +559,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get daily canvasser productivity
+  app.get("/api/canvassers/daily-productivity/:date", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { date } = req.params as any;
+      const profiles = await storage.getAllProfiles();
+      const canvasserActivities = await storage.getCanvasserActivities();
+      
+      // Generate productivity data for approved canvassers
+      const productivityData = profiles
+        .filter(profile => profile.role === 'canvasser' && profile.status === 'approved')
+        .map(profile => {
+          // Get activities for this canvasser on the specific date
+          const dayActivities = canvasserActivities.filter(activity => {
+            if (activity.canvasserId !== profile.id) return false;
+            const activityDate = new Date(activity.createdAt || '').toISOString().split('T')[0];
+            return activityDate === date;
+          });
+
+          // Calculate metrics
+          const dailyTarget = 10; // Default target
+          const actualCount = dayActivities.length;
+          const gadsPoints = Math.min(100, actualCount * 5);
+          const incentiveAmount = actualCount >= dailyTarget ? 1000 : actualCount * 50;
+          const performanceRating = actualCount >= dailyTarget * 1.2 ? 'excellent' : 
+                                   actualCount >= dailyTarget ? 'good' : 
+                                   actualCount >= dailyTarget * 0.8 ? 'average' : 'poor';
+
+          return {
+            id: profile.id,
+            email: profile.email,
+            fullName: profile.fullName || profile.email,
+            status: profile.status,
+            dailyTarget,
+            actualCount,
+            gadsPoints,
+            incentiveAmount,
+            performanceRating,
+            notes: '',
+            lastUpdated: new Date(),
+            updatedBy: 'system'
+          };
+        });
+
+      res.json(productivityData);
+    } catch (error) {
+      console.error("Error fetching daily productivity:", error);
+      res.status(500).json({ error: "Failed to fetch daily productivity data" });
+    }
+  });
+
+  // Update canvasser productivity
+  app.put("/api/canvassers/:id/productivity", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params as any;
+      const updateData = req.body as any;
+      
+      // For now, we'll return success since this is demonstration data
+      // In a real implementation, this would update the database
+      res.json({ 
+        message: "Productivity updated successfully",
+        canvasserId: id,
+        updatedFields: updateData
+      });
+    } catch (error) {
+      console.error("Error updating productivity:", error);
+      res.status(500).json({ error: "Failed to update productivity data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

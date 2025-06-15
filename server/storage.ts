@@ -65,6 +65,12 @@ export interface IStorage {
   getAllTurfs(): Promise<Turf[]>;
   getTurfsByTeam(teamId: number): Promise<Turf[]>;
   getTurfsByCreator(createdBy: number): Promise<Turf[]>;
+
+  // Canvasser Productivity
+  getCanvasserProductivity(canvasserId: string, date: string): Promise<CanvasserProductivity | undefined>;
+  createCanvasserProductivity(productivity: InsertCanvasserProductivity): Promise<CanvasserProductivity>;
+  updateCanvasserProductivity(canvasserId: string, date: string, productivity: Partial<InsertCanvasserProductivity>): Promise<CanvasserProductivity | undefined>;
+  getDailyProductivity(date: string): Promise<(CanvasserProductivity & { profile: Profile })[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -75,6 +81,7 @@ export class MemStorage implements IStorage {
   private attendance: Map<number, Attendance> = new Map();
   private profiles: Map<string, Profile> = new Map();
   private turfs: Map<number, Turf> = new Map();
+  private productivity: Map<string, CanvasserProductivity> = new Map();
   
   private userIdSeq = 1;
   private teamIdSeq = 1;
@@ -82,6 +89,7 @@ export class MemStorage implements IStorage {
   private taskIdSeq = 1;
   private attendanceIdSeq = 1;
   private turfIdSeq = 1;
+  private productivityIdSeq = 1;
 
   constructor() {
     // Create default admin user

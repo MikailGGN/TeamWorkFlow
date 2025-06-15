@@ -186,5 +186,7 @@ export type CanvasserActivity = typeof canvasserActivities.$inferSelect;
 export type InsertCanvasserActivity = z.infer<typeof insertCanvasserActivitySchema>;
 export type Turf = typeof turfs.$inferSelect;
 export type InsertTurf = z.infer<typeof insertTurfSchema>;
+export type CanvasserProductivity = typeof canvasserProductivity.$inferSelect;
+export type InsertCanvasserProductivity = z.infer<typeof insertCanvasserProductivitySchema>;
 export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
