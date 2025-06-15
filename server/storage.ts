@@ -1,9 +1,12 @@
 import { 
-  users, teams, teamMembers, tasks, attendance,
+  users, teams, teamMembers, tasks, attendance, profiles, canvasserActivities,
   type User, type InsertUser, type Team, type InsertTeam, 
   type TeamMember, type Task, type InsertTask, 
-  type Attendance, type InsertAttendance 
+  type Attendance, type InsertAttendance, type Profile, type InsertProfile,
+  type CanvasserActivity, type InsertCanvasserActivity, type CanvasserRegistration
 } from "@shared/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 export interface IStorage {
   // Users
