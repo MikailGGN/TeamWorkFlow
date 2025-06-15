@@ -33,11 +33,17 @@ const FlipCard = ({ image, delay }: { image: string; delay: number }) => {
             className="w-full h-full object-cover rounded-xl"
           />
         </div>
-        <div className="flip-card-back bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-          <div className="text-center text-white p-4">
-            <BarChart3 className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm font-semibold">Field Excellence</p>
+        <div className="flip-card-back bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="text-center text-white p-4 relative z-10">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-sm font-bold">FieldForce Pro</p>
+            <p className="text-xs text-blue-100 mt-1">Enterprise Suite</p>
           </div>
+          <div className="absolute -top-4 -right-4 w-16 h-16 bg-white/5 rounded-full blur-xl"></div>
+          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-purple-400/20 rounded-full blur-lg"></div>
         </div>
       </div>
     </div>
@@ -88,9 +94,9 @@ export function SignIn() {
             <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
               <BarChart3 className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold mb-4">Field Operations Excellence</h1>
+            <h1 className="text-4xl font-bold mb-4">FieldForce Pro</h1>
             <p className="text-xl text-blue-100 mb-8">
-              Streamline your team management with advanced analytics and comprehensive field operations control.
+              Advanced Field Operations Management Platform - Empowering teams with intelligent analytics and seamless coordination.
             </p>
           </div>
           
@@ -164,8 +170,8 @@ export function SignIn() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-              <p className="text-gray-600">Sign in to your field operations dashboard</p>
+              <h2 className="text-2xl font-bold text-gray-900">Welcome to FieldForce Pro</h2>
+              <p className="text-gray-600">Sign in to your advanced field operations platform</p>
             </CardHeader>
             
             <CardContent className="pt-0">

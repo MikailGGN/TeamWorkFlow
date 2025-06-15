@@ -36,11 +36,11 @@ export function LandingPage() {
             <BarChart3 className="text-white text-3xl w-10 h-10" />
           </div>
           <h1 className="text-5xl font-bold text-slate-900 mb-4">
-            Team Management Dashboard
+            FieldForce Pro
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
-            Streamline your team operations with comprehensive task management, 
-            attendance tracking, and performance analytics.
+            Advanced Field Operations Management Platform - Empowering teams with intelligent analytics, 
+            comprehensive task management, and seamless field coordination.
           </p>
           <div className="flex justify-center space-x-4">
             <Button 

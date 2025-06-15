@@ -361,8 +361,8 @@ export default function OKRDashboard() {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">OKR Performance Dashboard</h1>
-                <p className="text-slate-600 mt-1">Track expected vs actual sales performance by team, FAE, and region</p>
+                <h1 className="text-3xl font-bold text-slate-900">FieldForce Pro - OKR Performance</h1>
+                <p className="text-slate-600 mt-1">Advanced analytics for tracking expected vs actual sales performance by team, FAE, and region</p>
               </div>
               <div className="flex gap-2">
                 <Dialog open={isTargetDialogOpen} onOpenChange={setIsTargetDialogOpen}>
