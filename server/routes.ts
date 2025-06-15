@@ -548,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             last_active: activities.length > 0 
               ? activities.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())[0].createdAt
               : profile.createdAt,
-            status: profile.approvalStatus || 'pending'
+            status: profile.status || 'pending'
           };
         });
       
