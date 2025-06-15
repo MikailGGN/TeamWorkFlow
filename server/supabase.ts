@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, and } from "drizzle-orm";
@@ -8,20 +9,90 @@ import {
   type CanvasserActivity, type InsertCanvasserActivity
 } from "@shared/schema";
 
-// Initialize Supabase connection
+// Initialize Supabase client with URL and anon key (optional)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Only create Supabase client if both URL and key are available
+export const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Use DATABASE_URL for Drizzle ORM (required)
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  throw new Error("DATABASE_URL environment variable is not set");
+  throw new Error("DATABASE_URL environment variable is required");
 }
 
 const client = postgres(connectionString);
 export const db = drizzle(client);
 
 export class SupabaseStorage {
-  // Employees (FAEs/Admins)
+  // Alternative method using Supabase client
+  async getEmployeeWithClient(id: string): Promise<Employee | undefined> {
+    if (!supabase) {
+      console.warn('Supabase client not available, skipping client-based fetch');
+      return undefined;
+    }
+
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching employee with client:', error);
+      return undefined;
+    }
+    return data as Employee;
+  }
+
+  async getAllEmployeesWithClient(): Promise<Employee[]> {
+    if (!supabase) {
+      console.warn('Supabase client not available, skipping client-based fetch');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*');
+    
+    if (error) {
+      console.error('Error fetching employees with client:', error);
+      return [];
+    }
+    return data as Employee[];
+  }
+
+  async getFAEsWithClient(): Promise<Employee[]> {
+    if (!supabase) {
+      console.warn('Supabase client not available, skipping client-based fetch');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('role', 'FAE');
+    
+    if (error) {
+      console.error('Error fetching FAEs with client:', error);
+      return [];
+    }
+    return data as Employee[];
+  }
+
+  // Employees (FAEs/Admins) - Using Drizzle ORM
   async getEmployee(id: string): Promise<Employee | undefined> {
-    const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
-    return result[0];
+    try {
+      const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Error fetching employee with Drizzle:', error);
+      // Fallback to Supabase client
+      return this.getEmployeeWithClient(id);
+    }
   }
 
   async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
@@ -48,11 +119,25 @@ export class SupabaseStorage {
   }
 
   async getAllEmployees(): Promise<Employee[]> {
-    return await db.select().from(employees);
+    try {
+      const result = await db.select().from(employees);
+      return result;
+    } catch (error) {
+      console.error('Error fetching all employees with Drizzle:', error);
+      // Fallback to Supabase client
+      return this.getAllEmployeesWithClient();
+    }
   }
 
   async getFAEs(): Promise<Employee[]> {
-    return await db.select().from(employees).where(eq(employees.role, 'FAE'));
+    try {
+      const result = await db.select().from(employees).where(eq(employees.role, 'FAE'));
+      return result;
+    } catch (error) {
+      console.error('Error fetching FAEs with Drizzle:', error);
+      // Fallback to Supabase client
+      return this.getFAEsWithClient();
+    }
   }
 
   // Profiles (Canvassers/FAEs)

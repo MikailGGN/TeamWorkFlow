@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { logConnectionMethod } from "./supabase-config";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Log the database connection method being used
+  logConnectionMethod();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
