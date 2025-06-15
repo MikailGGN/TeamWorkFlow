@@ -1,8 +1,9 @@
 import { 
-  users, teams, teamMembers, tasks, attendance, profiles, canvasserActivities, turfs,
+  users, teams, teamMembers, tasks, attendance, profiles, employees, canvasserActivities, turfs,
   type User, type InsertUser, type Team, type InsertTeam, 
   type TeamMember, type Task, type InsertTask, 
   type Attendance, type InsertAttendance, type Profile, type InsertProfile,
+  type Employee, type InsertEmployee,
   type CanvasserActivity, type InsertCanvasserActivity, type CanvasserRegistration,
   type Turf, type InsertTurf, type CanvasserProductivity, type InsertCanvasserProductivity,
   type ActivityPlanner, type InsertActivityPlanner,
@@ -12,6 +13,7 @@ import {
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { supabaseStorage } from "./supabase";
 
 export interface IStorage {
   // Users
@@ -21,6 +23,14 @@ export interface IStorage {
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
 
+  // Employees (from public.employees)
+  getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeByEmail(email: string): Promise<Employee | undefined>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  getAllEmployees(): Promise<Employee[]>;
+  getFAEs(): Promise<Employee[]>; // Field Area Executives from public.employees
+
   // Profiles (Supabase)
   getProfile(id: string): Promise<Profile | undefined>;
   getProfileByEmail(email: string): Promise<Profile | undefined>;
@@ -28,7 +38,6 @@ export interface IStorage {
   updateProfile(id: string, profile: Partial<InsertProfile>): Promise<Profile | undefined>;
   getAllProfiles(): Promise<Profile[]>;
   getCanvassers(): Promise<Profile[]>;
-  getFAEs(): Promise<Profile[]>; // Field Area Executives
   approveCanvasser(id: string, approvedBy: string): Promise<Profile | undefined>;
   rejectCanvasser(id: string): Promise<Profile | undefined>;
 
@@ -162,6 +171,31 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+
+  // Employees - delegate to Supabase storage for public.employees table
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    return await supabaseStorage.getEmployee(id);
+  }
+
+  async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
+    return await supabaseStorage.getEmployeeByEmail(email);
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    return await supabaseStorage.createEmployee(employee);
+  }
+
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    return await supabaseStorage.updateEmployee(id, employee);
+  }
+
+  async getAllEmployees(): Promise<Employee[]> {
+    return await supabaseStorage.getAllEmployees();
+  }
+
+  async getFAEs(): Promise<Employee[]> {
+    return await supabaseStorage.getFAEs();
   }
 
   // Teams
@@ -353,10 +387,6 @@ export class MemStorage implements IStorage {
 
   async getCanvassers(): Promise<Profile[]> {
     return Array.from(this.profiles.values()).filter(profile => profile.role === 'canvasser');
-  }
-
-  async getFAEs(): Promise<Profile[]> {
-    return Array.from(this.profiles.values()).filter(profile => profile.role === 'fae');
   }
 
   async approveCanvasser(id: string, approvedBy: string): Promise<Profile | undefined> {
