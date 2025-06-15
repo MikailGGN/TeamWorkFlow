@@ -23,6 +23,7 @@ const navigationItems = [
   { path: "/turf-mapping", label: "Turf Mapping", icon: MapPin },
   { path: "/engagement-heatmap", label: "Engagement Heatmap", icon: Activity },
   { path: "/daily-canvasser-list", label: "Daily Productivity", icon: Target },
+  { path: "/daily-performance", label: "Daily Performance", icon: TrendingUp },
   { path: "/okr-dashboard", label: "OKR Performance", icon: TrendingUp },
   { path: "/tasks", label: "Task Management", icon: CheckSquare },
   { path: "/teams", label: "Team Management", icon: Users },

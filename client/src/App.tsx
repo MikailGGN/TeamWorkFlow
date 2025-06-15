@@ -21,6 +21,7 @@ import OKRDashboard from "@/pages/OKRDashboard";
 import AdminCPanel from "@/pages/AdminCPanel";
 import CameraDemo from "@/pages/CameraDemo";
 import TimeTracking from "@/pages/TimeTracking";
+import DailyPerformance from "@/pages/DailyPerformance";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/okr-dashboard" component={() => <ProtectedRoute component={OKRDashboard} />} />
       <Route path="/admin-cpanel" component={() => <ProtectedRoute component={AdminCPanel} />} />
       <Route path="/time-tracking" component={() => <ProtectedRoute component={TimeTracking} />} />
+      <Route path="/daily-performance" component={() => <ProtectedRoute component={DailyPerformance} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route path="/GadsReporting" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route component={NotFound} />
