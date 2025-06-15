@@ -676,19 +676,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/activity-planner", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const activityData = req.body as any;
-      
-      // For demonstration, we'll return success with mock data
-      const newActivity = {
-        id: Math.floor(Math.random() * 1000),
-        ...activityData,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      res.json(newActivity);
+      const activity = await storage.createActivityPlanner(activityData);
+      res.status(201).json(activity);
     } catch (error) {
       console.error("Error creating activity plan:", error);
       res.status(500).json({ error: "Failed to create activity plan" });
+    }
+  });
+
+  // OKR Target routes
+  app.get("/api/okr-targets", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const targets = await storage.getAllOkrTargets();
+      res.json(targets);
+    } catch (error) {
+      console.error("Error fetching OKR targets:", error);
+      res.status(500).json({ error: "Failed to fetch OKR targets" });
+    }
+  });
+
+  app.post("/api/okr-targets", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const targetData = req.body as any;
+      const target = await storage.createOkrTarget(targetData);
+      res.status(201).json(target);
+    } catch (error) {
+      console.error("Error creating OKR target:", error);
+      res.status(500).json({ error: "Failed to create OKR target" });
+    }
+  });
+
+  // OKR Actual results routes
+  app.get("/api/okr-actuals", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const actuals = await storage.getAllOkrActuals();
+      res.json(actuals);
+    } catch (error) {
+      console.error("Error fetching OKR actuals:", error);
+      res.status(500).json({ error: "Failed to fetch OKR actuals" });
+    }
+  });
+
+  app.post("/api/okr-actuals", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const actualData = req.body as any;
+      const actual = await storage.createOkrActual(actualData);
+      res.status(201).json(actual);
+    } catch (error) {
+      console.error("Error creating OKR actual:", error);
+      res.status(500).json({ error: "Failed to create OKR actual" });
+    }
+  });
+
+  // Sales Metrics routes
+  app.get("/api/sales-metrics", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const period = req.query?.period as string;
+      const metrics = period 
+        ? await storage.getSalesMetricsByPeriod(period)
+        : await storage.getAllSalesMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching sales metrics:", error);
+      res.status(500).json({ error: "Failed to fetch sales metrics" });
+    }
+  });
+
+  app.post("/api/sales-metrics", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const metricData = req.body as any;
+      const metric = await storage.createSalesMetric(metricData);
+      res.status(201).json(metric);
+    } catch (error) {
+      console.error("Error creating sales metric:", error);
+      res.status(500).json({ error: "Failed to create sales metric" });
     }
   });
 

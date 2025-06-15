@@ -4,7 +4,11 @@ import {
   type TeamMember, type Task, type InsertTask, 
   type Attendance, type InsertAttendance, type Profile, type InsertProfile,
   type CanvasserActivity, type InsertCanvasserActivity, type CanvasserRegistration,
-  type Turf, type InsertTurf
+  type Turf, type InsertTurf, type CanvasserProductivity, type InsertCanvasserProductivity,
+  type ActivityPlanner, type InsertActivityPlanner,
+  type OkrTarget, type InsertOkrTarget,
+  type OkrActual, type InsertOkrActual,
+  type SalesMetric, type InsertSalesMetric
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -444,6 +448,134 @@ export class MemStorage implements IStorage {
 
   async getTurfsByCreator(createdBy: number): Promise<Turf[]> {
     return Array.from(this.turfs.values()).filter(turf => turf.createdBy === createdBy);
+  }
+
+  // Canvasser Productivity methods
+  async getCanvasserProductivity(canvasserId: string, date: string): Promise<CanvasserProductivity | undefined> {
+    const key = `${canvasserId}-${date}`;
+    return this.productivity.get(key);
+  }
+
+  async createCanvasserProductivity(productivity: InsertCanvasserProductivity): Promise<CanvasserProductivity> {
+    const id = this.productivityIdSeq++;
+    const newProductivity: CanvasserProductivity = {
+      ...productivity,
+      id,
+      createdAt: new Date(),
+      lastUpdated: new Date()
+    };
+    const key = `${productivity.canvasserId}-${productivity.date}`;
+    this.productivity.set(key, newProductivity);
+    return newProductivity;
+  }
+
+  async updateCanvasserProductivity(canvasserId: string, date: string, productivity: Partial<InsertCanvasserProductivity>): Promise<CanvasserProductivity | undefined> {
+    const key = `${canvasserId}-${date}`;
+    const existing = this.productivity.get(key);
+    if (!existing) return undefined;
+
+    const updated: CanvasserProductivity = {
+      ...existing,
+      ...productivity,
+      lastUpdated: new Date()
+    };
+    this.productivity.set(key, updated);
+    return updated;
+  }
+
+  async getDailyProductivity(date: string): Promise<(CanvasserProductivity & { profile: Profile })[]> {
+    const productivityList = Array.from(this.productivity.values())
+      .filter(p => p.date === date);
+    
+    return productivityList.map(p => ({
+      ...p,
+      profile: this.profiles.get(p.canvasserId) || {} as Profile
+    }));
+  }
+
+  // Activity Planner methods
+  async getActivityPlanner(): Promise<ActivityPlanner[]> {
+    return Array.from(this.activities.values());
+  }
+
+  async createActivityPlanner(activity: InsertActivityPlanner): Promise<ActivityPlanner> {
+    const id = this.activityIdSeq++;
+    const newActivity: ActivityPlanner = {
+      ...activity,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      location: activity.location || null,
+      date: activity.date || null,
+      description: activity.description || null,
+      activityType: activity.activityType || null,
+      kitId: activity.kitId || null,
+      channels: activity.channels || null,
+      teamId: activity.teamId || null,
+      createdBy: activity.createdBy || null,
+      faeId: activity.faeId || null
+    };
+    this.activities.set(id, newActivity);
+    return newActivity;
+  }
+
+  // OKR Target methods
+  async getOkrTarget(id: number): Promise<OkrTarget | undefined> {
+    return this.okrTargets.get(id);
+  }
+
+  async createOkrTarget(target: InsertOkrTarget): Promise<OkrTarget> {
+    const id = this.okrTargetIdSeq++;
+    const newTarget: OkrTarget = {
+      ...target,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.okrTargets.set(id, newTarget);
+    return newTarget;
+  }
+
+  async getAllOkrTargets(): Promise<OkrTarget[]> {
+    return Array.from(this.okrTargets.values());
+  }
+
+  // OKR Actual methods
+  async createOkrActual(actual: InsertOkrActual): Promise<OkrActual> {
+    const id = this.okrActualIdSeq++;
+    const newActual: OkrActual = {
+      ...actual,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      recordedAt: new Date()
+    };
+    this.okrActuals.set(id, newActual);
+    return newActual;
+  }
+
+  async getAllOkrActuals(): Promise<OkrActual[]> {
+    return Array.from(this.okrActuals.values());
+  }
+
+  // Sales Metrics methods
+  async createSalesMetric(metric: InsertSalesMetric): Promise<SalesMetric> {
+    const id = this.salesMetricIdSeq++;
+    const newMetric: SalesMetric = {
+      ...metric,
+      id,
+      createdAt: new Date()
+    };
+    this.salesMetrics.set(id, newMetric);
+    return newMetric;
+  }
+
+  async getAllSalesMetrics(): Promise<SalesMetric[]> {
+    return Array.from(this.salesMetrics.values());
+  }
+
+  async getSalesMetricsByPeriod(period: string): Promise<SalesMetric[]> {
+    return Array.from(this.salesMetrics.values()).filter(metric => metric.period === period);
   }
 }
 
