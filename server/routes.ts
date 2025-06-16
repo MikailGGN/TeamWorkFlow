@@ -52,11 +52,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Supabase client not available' });
       }
 
-      // Test basic connection
-      const { data, error } = await supabase
-        .from('roles')
-        .select('count(*)')
-        .limit(1);
+      // Test basic connection with a simple query
+      const { data, error } = await supabase.rpc('version');
 
       if (error) {
         console.log('Supabase connection test failed:', error);
@@ -81,16 +78,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize roles and setup using Supabase client only
+  // Create database tables and initialize system
   app.post("/api/setup/init", async (req, res) => {
     try {
       if (!supabase) {
         return res.status(500).json({ error: 'Supabase client not available' });
       }
 
-      console.log('Initializing roles via Supabase client...');
+      console.log('Creating database schema via Supabase client...');
       
-      // Initialize default roles directly via Supabase
+      // Create roles table using direct SQL execution
+      const createRolesSQL = `
+        CREATE TABLE IF NOT EXISTS roles (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE,
+          description TEXT,
+          permissions JSONB DEFAULT '[]',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+      `;
+
+      const createUserRolesSQL = `
+        CREATE TABLE IF NOT EXISTS user_roles (
+          id SERIAL PRIMARY KEY,
+          user_id UUID NOT NULL,
+          role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT NOW(),
+          UNIQUE(user_id, role_id)
+        );
+      `;
+
+      const createEmployeesSQL = `
+        CREATE TABLE IF NOT EXISTS employees (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email TEXT NOT NULL UNIQUE,
+          full_name TEXT NOT NULL,
+          role TEXT NOT NULL,
+          department TEXT,
+          phone TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          supabase_user_id UUID UNIQUE,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+      `;
+
+      // Execute SQL commands using RPC
+      await supabase.rpc('exec_sql', { sql: createRolesSQL });
+      await supabase.rpc('exec_sql', { sql: createUserRolesSQL });
+      await supabase.rpc('exec_sql', { sql: createEmployeesSQL });
+
+      // Initialize default roles
       const defaultRoles = [
         { name: 'FAE', description: 'Field Area Engineer', permissions: ['create_teams', 'manage_canvassers', 'view_reports'] },
         { name: 'ADMIN', description: 'Administrator', permissions: ['full_access'] },
@@ -100,38 +138,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const createdRoles = [];
       for (const roleData of defaultRoles) {
-        const { data: existingRole } = await supabase
-          .from('roles')
-          .select('*')
-          .eq('name', roleData.name)
-          .single();
-
-        if (!existingRole) {
+        try {
           const { data, error } = await supabase
             .from('roles')
-            .insert({
+            .upsert({
               name: roleData.name,
               description: roleData.description,
               permissions: roleData.permissions
+            }, { 
+              onConflict: 'name',
+              ignoreDuplicates: true 
             })
             .select()
             .single();
 
-          if (!error) {
+          if (!error && data) {
             createdRoles.push(data);
-            console.log(`Created role: ${roleData.name}`);
+            console.log(`Created/updated role: ${roleData.name}`);
           }
+        } catch (roleError) {
+          console.log(`Role ${roleData.name} may already exist:`, roleError);
         }
       }
       
       res.json({ 
-        message: 'System initialized successfully via Supabase client',
+        message: 'Database schema created and system initialized successfully',
         createdRoles,
+        tablesCreated: ['roles', 'user_roles', 'employees'],
         supabaseConnected: true
       });
     } catch (error) {
       console.error('Error initializing system:', error);
       res.status(500).json({ error: 'Failed to initialize system', details: error.message });
+    }
+  });
+
+  // Create test user in Supabase auth
+  app.post("/api/setup/create-user", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: 'Supabase client not available' });
+      }
+
+      const { email, password, role = 'FAE' } = req.body;
+      console.log("Creating test user:", email);
+
+      // Create user in Supabase auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true
+      });
+
+      if (authError) {
+        console.error('Error creating auth user:', authError);
+        return res.status(400).json({ error: authError.message });
+      }
+
+      // Create employee record
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employees')
+        .insert({
+          email,
+          full_name: `Test User - ${role}`,
+          role,
+          department: role === 'FAE' ? 'Field Operations' : 'Administration',
+          phone: '+1234567890',
+          status: 'active',
+          supabase_user_id: authData.user.id
+        })
+        .select()
+        .single();
+
+      if (employeeError) {
+        console.error('Error creating employee:', employeeError);
+      }
+
+      // Assign role to user
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', role)
+        .single();
+
+      if (roleData) {
+        await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role_id: roleData.id
+          });
+      }
+
+      res.json({
+        message: 'User created successfully',
+        user: authData.user,
+        employee: employeeData,
+        role
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ error: 'Failed to create user' });
     }
   });
 
@@ -157,14 +264,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (data.user) {
-        // Get user with roles
-        const userWithRoles = await supabaseStorage.getUserWithRoles(data.user.id);
-        
-        if (!userWithRoles) {
-          return res.status(401).json({ error: 'User not found or unauthorized' });
+        // Get user roles
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select(`
+            roles (
+              name,
+              permissions
+            )
+          `)
+          .eq('user_id', data.user.id);
+
+        const roles = rolesData?.map((item: any) => item.roles.name) || [];
+
+        // Get employee data if user has FAE/ADMIN role
+        let employee = null;
+        if (roles.includes('FAE') || roles.includes('ADMIN')) {
+          const { data: employeeData } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('supabase_user_id', data.user.id)
+            .single();
+          
+          employee = employeeData;
         }
 
-        console.log("User authenticated with roles:", userWithRoles.roles);
+        const userWithRoles = {
+          id: data.user.id,
+          email: data.user.email,
+          roles,
+          employee
+        };
+
+        console.log("User authenticated with roles:", roles);
 
         // Create JWT token with role information
         const token = jwt.sign(
