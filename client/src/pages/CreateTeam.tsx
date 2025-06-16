@@ -14,8 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Plus, 
-  Camera, 
-  MapPin, 
   UserPlus, 
   Calendar,
   Check,
@@ -46,7 +44,7 @@ export default function CreateTeam() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   // Team creation state
   const [formData, setFormData] = useState<TeamFormData>({
@@ -63,8 +61,7 @@ export default function CreateTeam() {
   const [newKitId, setNewKitId] = useState<string>("");
   const [showKitDialog, setShowKitDialog] = useState(false);
 
-  // Team location state for ID generation
-  const [teamLocation, setTeamLocation] = useState<{lat: number, lng: number} | null>(null);
+
 
   // Canvasser registration state
   const [canvasserForm, setCanvasserForm] = useState<CanvasserRegistration>({
@@ -133,14 +130,7 @@ export default function CreateTeam() {
     }));
   };
 
-  // Generate team ID from date, geolocation, and team name
-  const generateTeamId = (teamName: string, location: {lat: number, lng: number}) => {
-    const date = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD format
-    const lat = location.lat.toFixed(4).replace('.', '').replace('-', 'N');
-    const lng = location.lng.toFixed(4).replace('.', '').replace('-', 'E');
-    const nameCode = teamName.replace(/\s+/g, '').substring(0, 6).toUpperCase();
-    return `${date}-${lat}${lng}-${nameCode}`;
-  };
+
 
   // Get current location for team
   const getTeamLocation = (): Promise<{lat: number, lng: number}> => {
@@ -639,8 +629,8 @@ export default function CreateTeam() {
                           }}
                           className="flex items-center gap-2"
                         >
-                          <MapPin className="w-4 h-4" />
-                          Capture Location
+                          <Target className="w-4 h-4" />
+                          Set Team Goal
                         </Button>
                         {teamLocation && formData.name && (
                           <Badge variant="secondary" className="text-xs">
