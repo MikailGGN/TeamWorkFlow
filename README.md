@@ -1,39 +1,55 @@
-# FieldForce Pro - Field Operations Management Platform
+# FieldForce Pro - Advanced Field Operations Management Platform
 
-A comprehensive field operations management platform designed for canvasser registration, team coordination, performance tracking, and equipment management with GPS verification and professional photo capture capabilities.
+A comprehensive field operations management platform featuring enhanced activity planning, SIM inventory tracking, advanced analytics, and team coordination with GPS verification and professional photo capture capabilities.
 
-## Features
+## Latest Features (v2.1.0)
+
+### Enhanced Activity Planning System
+- **Interactive Calendar View** - Monthly calendar with click-to-plan functionality
+- **Color-Coded Activity Types** - Visual identification for Mega Activation, Mini Activation, New Site Activation, New Site Launch, and Service Camp
+- **Dual View Modes** - Switch between calendar and list views for activity management
+- **Smart Filtering** - Search and filter activities by type, location, and date ranges
+- **Real-time Synchronization** - Instant updates across team members
+
+### SIM Card Inventory Management
+- **Collection Tracking** - Record SIM cards from vendors, customers, red shops, ASMs, and MDs
+- **Allocation Management** - Track distributions, returns, and transfers with detailed categorization
+- **Real-time Balance** - Current inventory calculated from collections minus allocations
+- **Transaction History** - Complete audit trails with timestamps and user tracking
+- **Structured Categories** - Organized source and allocation type management
+
+### Advanced Analytics & Reporting
+- **OKR Management** - Set targets and track actual performance metrics with visual indicators
+- **Engagement Heatmaps** - Geographic visualization of canvasser activity levels
+- **Performance Metrics** - Daily productivity tracking with inline editing capabilities
+- **Sales Analytics** - Revenue tracking, conversion rates, and customer acquisition costs
+- **Comprehensive Reporting** - CSV export capabilities for all modules
 
 ### Core Management
 - **Team Creation & Management** - Create field teams with location-based ID generation and multi-KIT ID equipment tracking
 - **Canvasser Registration** - Professional registration with enhanced camera capture, GPS verification, and MDNL watermarking
 - **Role-Based Authentication** - Secure access for Admin, FAE (Field Area Executive), and Canvasser roles
-- **Real-time Dashboard** - Live metrics and performance tracking
-
-### Performance & Analytics
-- **Daily Performance Tracking** - Record GADs, SmartPhone Activations, and Others by date
-- **FAE Reporting** - Comprehensive performance analytics with daily totals and monthly summaries
-- **OKR Dashboard** - Track targets and actual performance with visual indicators
-- **Engagement Heatmap** - Geographic visualization of field activities
-- **Daily Productivity** - Canvasser performance metrics with inline editing
+- **Real-time Dashboard** - Live metrics and performance tracking with enhanced visualizations
 
 ### Field Operations
-- **Time Tracking** - Clock-in/clock-out with GPS location verification
-- **Turf Mapping** - Interactive territory management with polygon drawing
+- **Time Tracking** - Clock-in/clock-out with GPS location verification and audit trails
+- **Territory Management** - Interactive turf mapping with polygon drawing and geographic boundaries
 - **Attendance Logging** - Complete attendance tracking with employee integration
-- **Activity Planning** - Calendar-based task and activity scheduling
+- **Task Management** - Priority-based task assignment with status tracking and workflow management
 
-### Enhanced Features
-- **Professional Photo Capture** - MDNL watermarked photos with GPS coordinates and timestamps
-- **Equipment Management** - KIT ID tracking and assignment for accountability
-- **Location Verification** - High-accuracy GPS integration throughout the platform
-- **Mobile-Responsive** - Optimized for field use on mobile devices
+### Enhanced User Experience
+- **Dark Mode Support** - Full application theming with user preferences
+- **Mobile Optimization** - Responsive design optimized for field operations on mobile devices
+- **Progressive Loading** - Skeleton screens and loading states for better user experience
+- **Real-time Notifications** - Toast notifications for actions and updates
+- **Accessibility Compliance** - WCAG compliant interface with proper ARIA labels
 
 ### Administrative Tools
-- **Admin Control Panel** - Complete database management interface
-- **Canvasser Approval** - Workflow for reviewing and approving new registrations
-- **User Management** - Comprehensive user administration
-- **Data Export** - CSV export capabilities for reporting and analysis
+- **Admin Control Panel** - Complete database management interface with advanced controls
+- **Canvasser Approval Workflow** - Streamlined process for reviewing and approving new registrations
+- **User Management** - Comprehensive user administration with role management
+- **Data Export Suite** - Enhanced CSV export capabilities for reporting and analysis
+- **Equipment Accountability** - KIT ID and SIM card tracking with complete audit trails
 
 ## Technology Stack
 
