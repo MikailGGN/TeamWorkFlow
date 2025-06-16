@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { logConnectionMethod } from "./supabase-config";
+import { applyProductionAPIFix } from "./production-fix";
 
 const app = express();
 app.use(express.json());
@@ -44,6 +45,11 @@ app.use((req, res, next) => {
   // Register API routes BEFORE error handling and static serving
   const server = await registerRoutes(app);
 
+  // Add production API route debugging
+  if (app.get("env") === "production") {
+    console.log('Production mode: API routes registered');
+  }
+
   // Error handling middleware (must be after routes)
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -63,6 +69,8 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
+    // Apply production API fix before static serving
+    applyProductionAPIFix(app);
     serveStatic(app);
   }
 
