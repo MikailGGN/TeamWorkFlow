@@ -910,7 +910,7 @@ export default function CreateTeam() {
                         ) : (
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                             <EnhancedCamera
-                              onPhotoCapture={(photoBlob) => {
+                              onPhotoCapture={(photoBlob: any) => {
                                 const reader = new FileReader();
                                 reader.onload = (e) => {
                                   const photoDataUrl = e.target?.result as string;
@@ -919,8 +919,6 @@ export default function CreateTeam() {
                                 };
                                 reader.readAsDataURL(photoBlob);
                               }}
-
-                              className="w-full"
                             />
                             <div className="mt-2 text-center">
                               <p className="text-sm text-gray-600">
@@ -981,12 +979,12 @@ export default function CreateTeam() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {canvassers.map((canvasser: Profile) => (
+                  {(canvassers as any[]).map((canvasser: any) => (
                     <Card key={canvasser.id} className="border">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3 mb-3">
                           {canvasser.photo ? (
-                            <img src={canvasser.photo} alt={canvasser.fullName} className="w-10 h-10 rounded-full object-cover" />
+                            <img src={canvasser.photo || ''} alt={canvasser.fullName || ''} className="w-10 h-10 rounded-full object-cover" />
                           ) : (
                             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                               <UserPlus className="w-5 h-5 text-gray-400" />
