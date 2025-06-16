@@ -26,6 +26,7 @@ import DailyPerformance from "@/pages/DailyPerformance";
 import FAEReporting from "@/pages/FAEReporting";
 import { SimInventory } from "@/pages/SimInventory";
 import { ActivityPlanner } from "@/pages/ActivityPlanner";
+import CampaignSetup from "@/pages/CampaignSetup";
 import { LandingPage } from "@/pages/LandingPage";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/fae-reporting" component={() => <ProtectedRoute component={FAEReporting} />} />
       <Route path="/sim-inventory" component={() => <ProtectedRoute component={SimInventory} />} />
       <Route path="/activity-planner" component={() => <ProtectedRoute component={ActivityPlanner} />} />
+      <Route path="/campaign-setup" component={() => <ProtectedRoute component={CampaignSetup} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route path="/GadsReporting" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route component={NotFound} />

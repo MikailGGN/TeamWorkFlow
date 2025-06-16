@@ -207,6 +207,26 @@ export const simCollection = pgTable("sim_collection", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Campaign management
+export const campaigns = pgTable("campaigns", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  targetAudience: text("target_audience"),
+  budget: decimal("budget", { precision: 10, scale: 2 }).default('0'),
+  locations: jsonb("locations"), // Array of location objects with photos
+  teams: jsonb("teams"), // Array of team IDs
+  objectives: jsonb("objectives"), // Array of objective strings
+  kpis: jsonb("kpis"), // Array of KPI strings
+  status: text("status").notNull().default("draft"), // draft, active, paused, completed
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
@@ -221,6 +241,7 @@ export const insertOkrTargetSchema = createInsertSchema(okrTargets).omit({ id: t
 export const insertOkrActualSchema = createInsertSchema(okrActuals).omit({ id: true, createdAt: true, updatedAt: true, recordedAt: true });
 export const insertSalesMetricSchema = createInsertSchema(salesMetrics).omit({ id: true, createdAt: true });
 export const insertSimCollectionSchema = createInsertSchema(simCollection).omit({ id: true, createdAt: true });
+export const insertCampaignSchema = createInsertSchema(campaigns).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const signInSchema = z.object({
   email: z.string().email(),
