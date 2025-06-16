@@ -45,17 +45,89 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize roles and setup
+  // Test Supabase connection
+  app.get("/api/test/supabase", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: 'Supabase client not available' });
+      }
+
+      // Test basic connection
+      const { data, error } = await supabase
+        .from('roles')
+        .select('count(*)')
+        .limit(1);
+
+      if (error) {
+        console.log('Supabase connection test failed:', error);
+        return res.json({
+          status: 'connection_failed',
+          error: error.message,
+          message: 'Tables may not exist yet - this is normal for first setup'
+        });
+      }
+
+      res.json({
+        status: 'connected',
+        message: 'Supabase connection successful',
+        data
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        status: 'error',
+        error: error.message,
+        message: 'Failed to test Supabase connection'
+      });
+    }
+  });
+
+  // Initialize roles and setup using Supabase client only
   app.post("/api/setup/init", async (req, res) => {
     try {
-      console.log('Initializing roles and system setup...');
+      if (!supabase) {
+        return res.status(500).json({ error: 'Supabase client not available' });
+      }
+
+      console.log('Initializing roles via Supabase client...');
       
-      // Initialize default roles
-      await supabaseStorage.initializeRoles();
+      // Initialize default roles directly via Supabase
+      const defaultRoles = [
+        { name: 'FAE', description: 'Field Area Engineer', permissions: ['create_teams', 'manage_canvassers', 'view_reports'] },
+        { name: 'ADMIN', description: 'Administrator', permissions: ['full_access'] },
+        { name: 'CANVASSER', description: 'Canvasser', permissions: ['update_profile', 'submit_activities'] },
+        { name: 'SUPERVISOR', description: 'Supervisor', permissions: ['view_teams', 'view_reports'] }
+      ];
+
+      const createdRoles = [];
+      for (const roleData of defaultRoles) {
+        const { data: existingRole } = await supabase
+          .from('roles')
+          .select('*')
+          .eq('name', roleData.name)
+          .single();
+
+        if (!existingRole) {
+          const { data, error } = await supabase
+            .from('roles')
+            .insert({
+              name: roleData.name,
+              description: roleData.description,
+              permissions: roleData.permissions
+            })
+            .select()
+            .single();
+
+          if (!error) {
+            createdRoles.push(data);
+            console.log(`Created role: ${roleData.name}`);
+          }
+        }
+      }
       
       res.json({ 
-        message: 'System initialized successfully',
-        roles: await supabaseStorage.getAllRoles()
+        message: 'System initialized successfully via Supabase client',
+        createdRoles,
+        supabaseConnected: true
       });
     } catch (error) {
       console.error('Error initializing system:', error);

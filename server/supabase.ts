@@ -21,21 +21,36 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-// Use DATABASE_URL for Drizzle ORM (required)
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL environment variable is required");
+// Skip DATABASE_URL connection if it's pointing to an invalid server
+// Use Supabase client directly for all database operations
+let db: any = null;
+
+if (supabase) {
+  console.log('Using Supabase client for database operations');
+} else {
+  console.warn('No Supabase client available - check SUPABASE_URL and SUPABASE_ANON_KEY');
 }
 
-const client = postgres(connectionString);
-export const db = drizzle(client);
+export { db };
 
 export class SupabaseStorage {
-  // Employees (FAEs/Admins) - Using Drizzle ORM
+  // Employees (FAEs/Admins) - Using Supabase client directly
   async getEmployee(id: string): Promise<Employee | undefined> {
     try {
-      const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
-      return result[0];
+      if (db) {
+        const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+        return result[0];
+      } else if (supabase) {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
+        return data;
+      }
+      return undefined;
     } catch (error) {
       console.error('Error fetching employee:', error);
       return undefined;
@@ -44,8 +59,20 @@ export class SupabaseStorage {
 
   async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
     try {
-      const result = await db.select().from(employees).where(eq(employees.email, email)).limit(1);
-      return result[0];
+      if (db) {
+        const result = await db.select().from(employees).where(eq(employees.email, email)).limit(1);
+        return result[0];
+      } else if (supabase) {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('email', email)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+        return data;
+      }
+      return undefined;
     } catch (error) {
       console.error('Error fetching employee by email:', error);
       return undefined;
@@ -177,20 +204,57 @@ export class SupabaseStorage {
 
   // Role Management
   async createRole(role: InsertRole): Promise<Role> {
-    const result = await db.insert(roles).values({
-      ...role,
-      createdAt: new Date()
-    }).returning();
-    return result[0];
+    if (db) {
+      const result = await db.insert(roles).values({
+        ...role,
+        createdAt: new Date()
+      }).returning();
+      return result[0];
+    } else if (supabase) {
+      const { data, error } = await supabase
+        .from('roles')
+        .insert({
+          ...role,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+    throw new Error('No database connection available');
   }
 
   async getAllRoles(): Promise<Role[]> {
-    return await db.select().from(roles);
+    if (db) {
+      return await db.select().from(roles);
+    } else if (supabase) {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    }
+    return [];
   }
 
   async getRoleByName(name: string): Promise<Role | undefined> {
-    const result = await db.select().from(roles).where(eq(roles.name, name)).limit(1);
-    return result[0];
+    if (db) {
+      const result = await db.select().from(roles).where(eq(roles.name, name)).limit(1);
+      return result[0];
+    } else if (supabase) {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('name', name)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    }
+    return undefined;
   }
 
   // User Role Management
@@ -202,12 +266,28 @@ export class SupabaseStorage {
         return undefined;
       }
 
-      const result = await db.insert(userRoles).values({
-        userId,
-        roleId: role.id,
-        createdAt: new Date()
-      }).returning();
-      return result[0];
+      if (db) {
+        const result = await db.insert(userRoles).values({
+          userId,
+          roleId: role.id,
+          createdAt: new Date()
+        }).returning();
+        return result[0];
+      } else if (supabase) {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role_id: role.id,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return data;
+      }
+      return undefined;
     } catch (error) {
       console.error('Error assigning user role:', error);
       return undefined;
@@ -216,13 +296,28 @@ export class SupabaseStorage {
 
   async getUserRoles(userId: string): Promise<string[]> {
     try {
-      const result = await db
-        .select({ roleName: roles.name })
-        .from(userRoles)
-        .innerJoin(roles, eq(userRoles.roleId, roles.id))
-        .where(eq(userRoles.userId, userId));
-      
-      return result.map(row => row.roleName);
+      if (db) {
+        const result = await db
+          .select({ roleName: roles.name })
+          .from(userRoles)
+          .innerJoin(roles, eq(userRoles.roleId, roles.id))
+          .where(eq(userRoles.userId, userId));
+        
+        return result.map((row: any) => row.roleName);
+      } else if (supabase) {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select(`
+            roles (
+              name
+            )
+          `)
+          .eq('user_id', userId);
+        
+        if (error) throw error;
+        return data?.map((item: any) => item.roles.name) || [];
+      }
+      return [];
     } catch (error) {
       console.error('Error fetching user roles:', error);
       return [];
