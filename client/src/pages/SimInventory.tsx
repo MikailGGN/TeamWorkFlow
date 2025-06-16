@@ -9,12 +9,40 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Smartphone, Plus, Search, Filter, Download, Edit, 
-  ArrowLeft, CheckCircle, XCircle, Clock, AlertTriangle
+  ArrowLeft, CheckCircle, XCircle, Clock, AlertTriangle, PackagePlus, Package2
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
+
+type TabValue = 'collection' | 'allocation' | 'inventory';
+
+interface CollectionData {
+  date: string;
+  quantity: number;
+  source: string;
+  source_details: string;
+}
+
+interface AllocationData {
+  date: string;
+  quantity: number;
+  allocation_type: string;
+  allocation_details: string;
+}
+
+interface SimCollection {
+  id: number;
+  date: string;
+  quantity: number;
+  source: string;
+  source_details: string;
+  useremail: string;
+  created_at: string;
+}
 
 interface SimCard {
   id: string;
@@ -30,163 +58,185 @@ interface SimCard {
   updatedAt: string;
 }
 
-interface SimCardFormData {
-  simNumber: string;
-  phoneNumber: string;
-  carrier: string;
-  status: 'available' | 'assigned' | 'damaged' | 'lost';
-  assignedTo?: string;
-  teamId?: string;
-  notes?: string;
-}
+const SOURCE_OPTIONS = ['Vendor', 'Customer', 'Red Shop', 'ASM', 'MD'];
+const ALLOCATION_OPTIONS = ['Return to Vendor', 'Sold to Customer', 'Transfer to Others'];
+
+const defaultDate = () => new Date().toISOString().split('T')[0];
+
+const initialCollection: CollectionData = { 
+  date: defaultDate(), 
+  quantity: 0, 
+  source: '', 
+  source_details: '' 
+};
+
+const initialAllocation: AllocationData = { 
+  date: defaultDate(), 
+  quantity: 0, 
+  allocation_type: '', 
+  allocation_details: '' 
+};
 
 export function SimInventory() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [isAddingCard, setIsAddingCard] = useState(false);
-  const [editingCard, setEditingCard] = useState<SimCard | null>(null);
+  const [activeTab, setActiveTab] = useState<TabValue>('collection');
+  const [collectionData, setCollectionData] = useState<CollectionData>(initialCollection);
+  const [allocationData, setAllocationData] = useState<AllocationData>(initialAllocation);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  
-  const [formData, setFormData] = useState<SimCardFormData>({
-    simNumber: "",
-    phoneNumber: "",
-    carrier: "",
-    status: "available",
-    assignedTo: "",
-    teamId: "",
-    notes: ""
+  const [dateFilter, setDateFilter] = useState<string>("");
+
+  // Fetch SIM collection records
+  const { data: simCollections = [], isLoading: collectionsLoading } = useQuery({
+    queryKey: ["/api/sim-collection"],
+    queryFn: () => apiRequest("/api/sim-collection"),
   });
 
-  // Fetch SIM cards
-  const { data: simCards = [], isLoading } = useQuery({
-    queryKey: ["/api/sim-cards"],
-    queryFn: () => apiRequest("/api/sim-cards"),
-  });
-
-  // Fetch teams for assignment
-  const { data: teams = [] } = useQuery({
-    queryKey: ["/api/teams"],
-    queryFn: () => apiRequest("/api/teams"),
-  });
-
-  // Fetch profiles for assignment
-  const { data: profiles = [] } = useQuery({
-    queryKey: ["/api/profiles"],
-    queryFn: () => apiRequest("/api/profiles"),
-  });
-
-  // Create/Update SIM card mutation
-  const simCardMutation = useMutation({
+  // Collection/Allocation mutation
+  const simMutation = useMutation({
     mutationFn: (data: { method: string; url: string; body?: any }) =>
       apiRequest(data.url, { method: data.method, body: data.body }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/sim-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sim-collection"] });
       toast({
         title: "Success",
-        description: editingCard ? "SIM card updated successfully" : "SIM card added successfully",
+        description: activeTab === 'collection' ? "SIM collection recorded successfully" : "SIM allocation recorded successfully",
       });
       resetForm();
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to save SIM card",
+        description: error.message || "Failed to record SIM transaction",
         variant: "destructive",
       });
     },
   });
 
   const resetForm = () => {
-    setFormData({
-      simNumber: "",
-      phoneNumber: "",
-      carrier: "",
-      status: "available",
-      assignedTo: "",
-      teamId: "",
-      notes: ""
-    });
-    setIsAddingCard(false);
-    setEditingCard(null);
+    if (activeTab === 'collection') {
+      setCollectionData(initialCollection);
+    } else {
+      setAllocationData(initialAllocation);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const updatedValue = name === 'quantity' ? Math.max(0, parseInt(value) || 0) : value;
+
+    if (activeTab === 'collection') {
+      setCollectionData(prev => ({ ...prev, [name]: updatedValue }));
+    } else {
+      setAllocationData(prev => ({ ...prev, [name]: updatedValue }));
+    }
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    if (activeTab === 'collection') {
+      setCollectionData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setAllocationData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const validateForm = (): string => {
+    const data = activeTab === 'collection' ? collectionData : allocationData;
+    
+    if (!data.date) return 'Date is required';
+    if (data.quantity <= 0) return 'Quantity must be greater than 0';
+    
+    if (activeTab === 'collection') {
+      if (!(data as CollectionData).source) return 'Source is required';
+      if (!(data as CollectionData).source_details.trim()) return 'Source details are required';
+    } else {
+      if (!(data as AllocationData).allocation_type) return 'Allocation type is required';
+      if (!(data as AllocationData).allocation_details.trim()) return 'Allocation details are required';
+    }
+    
+    return '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.simNumber || !formData.phoneNumber || !formData.carrier) {
+    const validationError = validateForm();
+    if (validationError) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: validationError,
         variant: "destructive",
       });
       return;
     }
 
-    const method = editingCard ? "PUT" : "POST";
-    const url = editingCard ? `/api/sim-cards/${editingCard.id}` : "/api/sim-cards";
-    
-    simCardMutation.mutate({
-      method,
-      url,
-      body: formData
-    });
+    setIsSubmitting(true);
+
+    try {
+      const formData = activeTab === 'collection'
+        ? { ...collectionData, allocation_type: null, allocation_details: null }
+        : { ...allocationData, source: null, source_details: null };
+
+      simMutation.mutate({
+        method: "POST",
+        url: "/api/sim-collection",
+        body: formData
+      });
+    } catch (error) {
+      console.error('Submission error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const startEdit = (card: SimCard) => {
-    setEditingCard(card);
-    setFormData({
-      simNumber: card.simNumber,
-      phoneNumber: card.phoneNumber,
-      carrier: card.carrier,
-      status: card.status,
-      assignedTo: card.assignedTo || "",
-      teamId: card.teamId || "",
-      notes: card.notes || ""
-    });
-    setIsAddingCard(true);
+  const getTransactionTypeBadge = (record: any) => {
+    if (record.source) {
+      return <Badge className="bg-green-100 text-green-800">Collection</Badge>;
+    } else {
+      return <Badge className="bg-red-100 text-red-800">Allocation</Badge>;
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; icon: any; color: string }> = {
-      available: { variant: "secondary", icon: CheckCircle, color: "text-green-600" },
-      assigned: { variant: "default", icon: Clock, color: "text-blue-600" },
-      damaged: { variant: "destructive", icon: AlertTriangle, color: "text-red-600" },
-      lost: { variant: "destructive", icon: XCircle, color: "text-red-600" }
-    };
-    
-    const config = variants[status] || variants.available;
-    const Icon = config.icon;
-    
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        <Icon className={`w-3 h-3 ${config.color}`} />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
-  const filteredCards = simCards.filter((card: SimCard) => {
+  const filteredRecords = Array.isArray(simCollections) ? simCollections.filter((record: any) => {
     const matchesSearch = 
-      card.simNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      card.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      card.carrier.toLowerCase().includes(searchTerm.toLowerCase());
+      record.source_details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.allocation_details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.allocation_type?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || card.status === statusFilter;
+    const matchesDate = !dateFilter || record.date === dateFilter;
     
-    return matchesSearch && matchesStatus;
-  });
+    return matchesSearch && matchesDate;
+  }) : [];
 
-  const getStatusCounts = () => {
-    return simCards.reduce((acc: any, card: SimCard) => {
-      acc[card.status] = (acc[card.status] || 0) + 1;
-      return acc;
-    }, {});
+  const getTotalBalance = () => {
+    if (!Array.isArray(simCollections)) return 0;
+    
+    return simCollections.reduce((balance: number, record: any) => {
+      if (record.source) {
+        return balance + record.quantity; // Collection adds
+      } else {
+        return balance - record.quantity; // Allocation subtracts
+      }
+    }, 0);
   };
 
-  const statusCounts = getStatusCounts();
+  const getCollectionTotal = () => {
+    if (!Array.isArray(simCollections)) return 0;
+    return simCollections
+      .filter((record: any) => record.source)
+      .reduce((total: number, record: any) => total + record.quantity, 0);
+  };
+
+  const getAllocationTotal = () => {
+    if (!Array.isArray(simCollections)) return 0;
+    return simCollections
+      .filter((record: any) => record.allocation_type)
+      .reduce((total: number, record: any) => total + record.quantity, 0);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -208,18 +258,11 @@ export function SimInventory() {
                   <Smartphone className="text-white w-6 h-6" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">SIM Card Inventory</h1>
-                  <p className="text-sm text-gray-600">Manage equipment and track assignments</p>
+                  <h1 className="text-xl font-bold text-gray-900">SIM Card Management</h1>
+                  <p className="text-sm text-gray-600">Track collection and allocation of SIM cards</p>
                 </div>
               </div>
             </div>
-            <Button
-              onClick={() => setIsAddingCard(true)}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add SIM Card
-            </Button>
           </div>
         </div>
       </div>
@@ -231,10 +274,10 @@ export function SimInventory() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total SIM Cards</p>
-                  <p className="text-2xl font-bold">{simCards.length}</p>
+                  <p className="text-sm text-gray-600">Current Balance</p>
+                  <p className="text-2xl font-bold text-blue-600">{getTotalBalance()}</p>
                 </div>
-                <Smartphone className="w-8 h-8 text-gray-400" />
+                <Smartphone className="w-8 h-8 text-blue-400" />
               </div>
             </CardContent>
           </Card>
@@ -243,10 +286,10 @@ export function SimInventory() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Available</p>
-                  <p className="text-2xl font-bold text-green-600">{statusCounts.available || 0}</p>
+                  <p className="text-sm text-gray-600">Total Collected</p>
+                  <p className="text-2xl font-bold text-green-600">{getCollectionTotal()}</p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-green-400" />
+                <PackagePlus className="w-8 h-8 text-green-400" />
               </div>
             </CardContent>
           </Card>
@@ -255,10 +298,10 @@ export function SimInventory() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Assigned</p>
-                  <p className="text-2xl font-bold text-blue-600">{statusCounts.assigned || 0}</p>
+                  <p className="text-sm text-gray-600">Total Allocated</p>
+                  <p className="text-2xl font-bold text-red-600">{getAllocationTotal()}</p>
                 </div>
-                <Clock className="w-8 h-8 text-blue-400" />
+                <Package2 className="w-8 h-8 text-red-400" />
               </div>
             </CardContent>
           </Card>
@@ -267,156 +310,195 @@ export function SimInventory() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Issues</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {(statusCounts.damaged || 0) + (statusCounts.lost || 0)}
-                  </p>
+                  <p className="text-sm text-gray-600">Total Records</p>
+                  <p className="text-2xl font-bold text-purple-600">{Array.isArray(simCollections) ? simCollections.length : 0}</p>
                 </div>
-                <AlertTriangle className="w-8 h-8 text-red-400" />
+                <Clock className="w-8 h-8 text-purple-400" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Add/Edit Form */}
-        {isAddingCard && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{editingCard ? "Edit SIM Card" : "Add New SIM Card"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="simNumber">SIM Number *</Label>
-                  <Input
-                    id="simNumber"
-                    value={formData.simNumber}
-                    onChange={(e) => setFormData({ ...formData, simNumber: e.target.value })}
-                    placeholder="Enter SIM number"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="phoneNumber">Phone Number *</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    placeholder="Enter phone number"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="carrier">Carrier *</Label>
-                  <Select
-                    value={formData.carrier}
-                    onValueChange={(value) => setFormData({ ...formData, carrier: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select carrier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MTN">MTN</SelectItem>
-                      <SelectItem value="Airtel">Airtel</SelectItem>
-                      <SelectItem value="9mobile">9mobile</SelectItem>
-                      <SelectItem value="Glo">Glo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="status">Status *</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
-                      <SelectItem value="damaged">Damaged</SelectItem>
-                      <SelectItem value="lost">Lost</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {formData.status === "assigned" && (
-                  <>
+        {/* Collection and Allocation Forms */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>SIM Card Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="collection">Collection</TabsTrigger>
+                <TabsTrigger value="allocation">Allocation</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="collection" className="mt-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="assignedTo">Assigned To</Label>
-                      <Select
-                        value={formData.assignedTo}
-                        onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select canvasser" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {profiles.map((profile: any) => (
-                            <SelectItem key={profile.id} value={profile.id}>
-                              {profile.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="collection-date">Collection Date *</Label>
+                      <Input
+                        id="collection-date"
+                        type="date"
+                        name="date"
+                        value={collectionData.date}
+                        onChange={handleInputChange}
+                        required
+                        disabled={isSubmitting}
+                      />
                     </div>
                     
                     <div>
-                      <Label htmlFor="teamId">Team</Label>
-                      <Select
-                        value={formData.teamId}
-                        onValueChange={(value) => setFormData({ ...formData, teamId: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teams.map((team: any) => (
-                            <SelectItem key={team.id} value={team.id.toString()}>
-                              {team.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="collection-quantity">Number of SIM Cards *</Label>
+                      <Input
+                        id="collection-quantity"
+                        type="number"
+                        name="quantity"
+                        value={collectionData.quantity || ''}
+                        onChange={handleInputChange}
+                        min="1"
+                        required
+                        disabled={isSubmitting}
+                      />
                     </div>
-                  </>
-                )}
-                
-                <div className="md:col-span-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Additional notes or comments"
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="md:col-span-2 flex gap-2">
-                  <Button
-                    type="submit"
-                    disabled={simCardMutation.isPending}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    {simCardMutation.isPending ? "Saving..." : editingCard ? "Update SIM Card" : "Add SIM Card"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={resetForm}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="collection-source">Source *</Label>
+                    <Select
+                      value={collectionData.source}
+                      onValueChange={(value) => handleSelectChange('source', value)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOURCE_OPTIONS.map(option => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="collection-details">Source Details *</Label>
+                    <Textarea
+                      id="collection-details"
+                      name="source_details"
+                      value={collectionData.source_details}
+                      onChange={handleInputChange}
+                      placeholder="Provide details about the source"
+                      rows={3}
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isSubmitting ? "Recording..." : "Record Collection"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetForm}
+                      disabled={isSubmitting}
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="allocation" className="mt-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="allocation-date">Allocation Date *</Label>
+                      <Input
+                        id="allocation-date"
+                        type="date"
+                        name="date"
+                        value={allocationData.date}
+                        onChange={handleInputChange}
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="allocation-quantity">Number of SIM Cards *</Label>
+                      <Input
+                        id="allocation-quantity"
+                        type="number"
+                        name="quantity"
+                        value={allocationData.quantity || ''}
+                        onChange={handleInputChange}
+                        min="1"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="allocation-type">Allocation Type *</Label>
+                    <Select
+                      value={allocationData.allocation_type}
+                      onValueChange={(value) => handleSelectChange('allocation_type', value)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select allocation type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ALLOCATION_OPTIONS.map(option => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="allocation-details">Allocation Details *</Label>
+                    <Textarea
+                      id="allocation-details"
+                      name="allocation_details"
+                      value={allocationData.allocation_details}
+                      onChange={handleInputChange}
+                      placeholder="Provide details about the allocation"
+                      rows={3}
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      {isSubmitting ? "Recording..." : "Record Allocation"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetForm}
+                      disabled={isSubmitting}
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
         {/* Search and Filters */}
         <Card className="mb-6">

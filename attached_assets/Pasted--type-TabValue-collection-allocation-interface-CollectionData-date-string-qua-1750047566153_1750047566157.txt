@@ -1,0 +1,334 @@
+
+type TabValue = 'collection' | 'allocation';
+
+interface CollectionData {
+  date: string;
+  quantity: number;
+  source: string;
+  source_details: string;
+}
+
+interface AllocationData {
+  date: string;
+  quantity: number;
+  allocation_type: string;
+  allocation_details: string;
+}
+
+const SOURCE_OPTIONS = ['Vendor', 'Customer', 'Red Shop', 'ASM', 'MD'];
+const ALLOCATION_OPTIONS = ['Return to Vendor', 'Sold to Customer', 'Transfer to Others'];
+
+const defaultDate = () => new Date().toISOString().split('T')[0];
+
+const initialCollection: CollectionData = { 
+  date: defaultDate(), 
+  quantity: 0, 
+  source: '', 
+  source_details: '' 
+};
+
+const initialAllocation: AllocationData = { 
+  date: defaultDate(), 
+  quantity: 0, 
+  allocation_type: '', 
+  allocation_details: '' 
+};
+
+type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+
+const CollectionForm = ({ collectionData, handleInputChange, handleSelectChange, isSubmitting }: any) => (
+  <>
+    <TextField
+      fullWidth
+      label="Collection Date"
+      type="date"
+      name="date"
+      value={collectionData.date}
+      onChange={handleInputChange}
+      InputLabelProps={{ shrink: true }}
+      required
+      sx={{ mb: 3 }}
+      disabled={isSubmitting}
+    />
+    <TextField
+      fullWidth
+      label="Number of SIM Cards"
+      type="number"
+      name="quantity"
+      value={collectionData.quantity || ''}
+      onChange={handleInputChange}
+      inputProps={{ min: 1 }}
+      required
+      sx={{ mb: 3 }}
+      disabled={isSubmitting}
+    />
+    <FormControl fullWidth sx={{ mb: 3 }} disabled={isSubmitting}>
+      <InputLabel>Source *</InputLabel>
+      <Select
+        value={collectionData.source}
+        label="Source *"
+        onChange={handleSelectChange}
+        name="source"
+        required
+      >
+        {SOURCE_OPTIONS.map(opt => (
+          <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+    <TextField
+      fullWidth
+      label="Source Details"
+      name="source_details"
+      value={collectionData.source_details}
+      onChange={handleInputChange}
+      multiline
+      rows={3}
+      sx={{ mb: 3 }}
+      disabled={isSubmitting}
+      required
+    />
+  </>
+);
+
+const AllocationForm = ({ allocationData, handleInputChange, handleSelectChange, isSubmitting }: any) => (
+  <>
+    <TextField
+      fullWidth
+      label="Allocation Date"
+      type="date"
+      name="date"
+      value={allocationData.date}
+      onChange={handleInputChange}
+      InputLabelProps={{ shrink: true }}
+      required
+      sx={{ mb: 3 }}
+      disabled={isSubmitting}
+    />
+    <TextField
+      fullWidth
+      label="Number of SIM Cards"
+      type="number"
+      name="quantity"
+      value={allocationData.quantity || ''}
+      onChange={handleInputChange}
+      inputProps={{ min: 1 }}
+      required
+      sx={{ mb: 3 }}
+      disabled={isSubmitting}
+    />
+    <FormControl fullWidth sx={{ mb: 3 }} disabled={isSubmitting}>
+      <InputLabel>Allocation Type *</InputLabel>
+      <Select
+        value={allocationData.allocation_type}
+        label="Allocation Type *"
+        onChange={handleSelectChange}
+        name="allocation_type"
+        required
+      >
+        {ALLOCATION_OPTIONS.map(opt => (
+          <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+    <TextField
+      fullWidth
+      label="Allocation Details"
+      name="allocation_details"
+      value={allocationData.allocation_details}
+      onChange={handleInputChange}
+      multiline
+      rows={3}
+      sx={{ mb: 3 }}
+      disabled={isSubmitting}
+      required
+    />
+  </>
+);
+
+const SimCardForm = () => {
+  const [activeTab, setActiveTab] = useState<TabValue>('collection');
+  const [collectionData, setCollectionData] = useState<CollectionData>(initialCollection);
+  const [allocationData, setAllocationData] = useState<AllocationData>(initialAllocation);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        setConnectionStatus('connecting');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+        if (!session?.user?.email) throw new Error('No active session found');
+        
+        setUserEmail(session.user.email);
+        setConnectionStatus('connected');
+      } catch (error) {
+        console.error('Session error:', error);
+        setConnectionStatus('disconnected');
+        setError('Authentication required. Redirecting to login...');
+        setTimeout(() => navigate('/'), 2000);
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setConnectionStatus('disconnected');
+        navigate('/');
+      }
+    });
+
+    return () => subscription?.unsubscribe();
+  }, [navigate]);
+
+  const handleTabChange = (_: SyntheticEvent, newTab: TabValue) => {
+    setActiveTab(newTab);
+    resetForm();
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    const updatedValue = name === 'quantity' ? Math.max(0, parseInt(value) || 0) : value;
+
+    if (activeTab === 'collection') {
+      setCollectionData(prev => ({ ...prev, [name]: updatedValue }));
+    } else {
+      setAllocationData(prev => ({ ...prev, [name]: updatedValue }));
+    }
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    
+    if (activeTab === 'collection') {
+      setCollectionData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setAllocationData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const validateForm = (): string => {
+    const data = activeTab === 'collection' ? collectionData : allocationData;
+    
+    if (!data.date) return 'Date is required';
+    if (data.quantity <= 0) return 'Quantity must be greater than 0';
+    
+    if (activeTab === 'collection') {
+      if (!(data as CollectionData).source) return 'Source is required';
+      if (!(data as CollectionData).source_details.trim()) return 'Source details are required';
+    } else {
+      if (!(data as AllocationData).allocation_type) return 'Allocation type is required';
+      if (!(data as AllocationData).allocation_details.trim()) return 'Allocation details are required';
+    }
+    
+    return '';
+  };
+
+  const handleSubmit = async () => {
+    if (connectionStatus !== 'connected') {
+      setError('No active database connection');
+      return;
+    }
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const formData = activeTab === 'collection'
+        ? { ...collectionData, allocation_type: null, allocation_details: null, useremail: userEmail }
+        : { ...allocationData, source: null, source_details: null, useremail: userEmail };
+
+      const { error } = await supabase.from('sim_collection').insert([formData]);
+      
+      if (error) throw error;
+      
+      setSubmitSuccess(true);
+      resetForm();
+      setTimeout(() => setSubmitSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Submission failed');
+      console.error('Submission error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    if (activeTab === 'collection') {
+      setCollectionData(initialCollection);
+    } else {
+      setAllocationData(initialAllocation);
+    }
+    setError('');
+  };
+
+  return (
+    <Paper elevation={3} sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+      <Typography variant="h5" gutterBottom fontWeight="bold" mb={3}>
+        SIM Card Management
+      </Typography>
+
+      {connectionStatus === 'connecting' && (
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <CircularProgress size={20} sx={{ mr: 1 }} />
+          <Typography variant="body2">Establishing connection...</Typography>
+        </Box>
+      )}
+
+      {connectionStatus === 'disconnected' && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Connection unavailable. Please try again later.
+        </Alert>
+      )}
+
+      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }} >
+        <Tab label="Collection" value="collection" />
+        <Tab label="Allocation" value="allocation" />
+      </Tabs>
+
+      <Box component="form">
+        {activeTab === 'collection' ? (
+          <CollectionForm 
+            collectionData={collectionData} 
+            handleInputChange={handleInputChange} 
+            handleSelectChange={handleSelectChange} 
+            isSubmitting={isSubmitting} 
+          />
+        ) : (
+          <AllocationForm 
+            allocationData={allocationData} 
+            handleInputChange={handleInputChange} 
+            handleSelectChange={handleSelectChange} 
+            isSubmitting={isSubmitting} 
+          />
+        )}
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Button variant="outlined" onClick={resetForm} disabled={isSubmitting || connectionStatus !== 'connected'}>
+          Reset
+        </Button>
+        <Button 
+          variant="contained" 
+          onClick={handleSubmit} 
+          disabled={isSubmitting || connectionStatus !== 'connected'} 
+          endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+        >
+          {isSubmitting ? 'Processing...' : 'Submit'}
+        </Button>
+      </Box>
