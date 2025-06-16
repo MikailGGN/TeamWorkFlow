@@ -288,6 +288,47 @@ CREATE TABLE IF NOT EXISTS public.sales_metrics (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 15. Create time_clocked table for GPS-verified time tracking
+CREATE TABLE IF NOT EXISTS public.time_clocked (
+    id SERIAL PRIMARY KEY,
+    useremail TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'Clock In', 'Clock Out'
+    time TEXT NOT NULL, -- Time in HH:MM:SS format
+    date DATE NOT NULL,
+    day TEXT NOT NULL, -- Day of week
+    location TEXT NOT NULL, -- GPS coordinates "lat, lon"
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 16. Create canvasser_performance table for daily performance tracking
+CREATE TABLE IF NOT EXISTS public.canvasser_performance (
+    id SERIAL PRIMARY KEY,
+    canvasser_id TEXT NOT NULL,
+    canvasser_name TEXT NOT NULL,
+    date DATE NOT NULL,
+    gads INTEGER DEFAULT 0,
+    smartphone_activation INTEGER DEFAULT 0,
+    others INTEGER DEFAULT 0,
+    recorded_by TEXT NOT NULL, -- FAE email who recorded the performance
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(canvasser_id, date) -- Prevent duplicate entries for same canvasser on same date
+);
+
+-- 17. Create kit_assignments table for equipment management
+CREATE TABLE IF NOT EXISTS public.kit_assignments (
+    id SERIAL PRIMARY KEY,
+    kit_id TEXT NOT NULL,
+    team_id INTEGER REFERENCES public.teams(id),
+    assigned_to UUID REFERENCES public.profiles(id),
+    assigned_by TEXT NOT NULL, -- FAE email who assigned the kit
+    assignment_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    return_date TIMESTAMP WITH TIME ZONE,
+    status TEXT DEFAULT 'assigned', -- assigned, returned, lost, damaged
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_employees_email ON public.employees(email);
 CREATE INDEX IF NOT EXISTS idx_employees_role ON public.employees(role);
@@ -306,6 +347,12 @@ CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance(date);
 CREATE INDEX IF NOT EXISTS idx_turfs_team_id ON public.turfs(team_id);
 CREATE INDEX IF NOT EXISTS idx_okr_targets_fae_id ON public.okr_targets(fae_id);
 CREATE INDEX IF NOT EXISTS idx_sales_metrics_fae_id ON public.sales_metrics(fae_id);
+CREATE INDEX IF NOT EXISTS idx_time_clocked_useremail ON public.time_clocked(useremail);
+CREATE INDEX IF NOT EXISTS idx_time_clocked_date ON public.time_clocked(date);
+CREATE INDEX IF NOT EXISTS idx_canvasser_performance_canvasser_id ON public.canvasser_performance(canvasser_id);
+CREATE INDEX IF NOT EXISTS idx_canvasser_performance_date ON public.canvasser_performance(date);
+CREATE INDEX IF NOT EXISTS idx_kit_assignments_kit_id ON public.kit_assignments(kit_id);
+CREATE INDEX IF NOT EXISTS idx_kit_assignments_team_id ON public.kit_assignments(team_id);
 
 -- Enable Row Level Security (RLS) on sensitive tables
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
@@ -372,6 +419,7 @@ AND tablename IN (
     'employees', 'profiles', 'users', 'teams', 'team_members', 
     'tasks', 'attendance', 'canvasser_activities', 'turfs', 
     'canvasser_productivity', 'activity_planner', 'okr_targets', 
-    'okr_actuals', 'sales_metrics'
+    'okr_actuals', 'sales_metrics', 'time_clocked', 'canvasser_performance',
+    'kit_assignments'
 )
 ORDER BY tablename;

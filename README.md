@@ -1,18 +1,39 @@
-# FieldForce Pro - Enterprise Team Management Suite
+# FieldForce Pro - Field Operations Management Platform
 
-A comprehensive team and project management web application designed for field operations with advanced canvasser tracking, equipment management, and performance analytics.
+A comprehensive field operations management platform designed for canvasser registration, team coordination, performance tracking, and equipment management with GPS verification and professional photo capture capabilities.
 
 ## Features
 
-- **Role-based Authentication** - Secure login system with FAE and Admin roles
-- **Team Management** - Create and manage field teams with canvasser registration
-- **Daily Productivity Tracking** - Monitor canvasser performance with inline editing
-- **KIT ID Equipment Management** - Track equipment assignment, return, and status
-- **Interactive Territory Mapping** - Advanced turf cutting with geographic boundaries
-- **Engagement Analytics** - Heatmap visualization for canvasser activities
-- **OKR Dashboard** - Comprehensive sales performance tracking
-- **Task Management** - Calendar-based activity planning and assignment
-- **Real-time Updates** - Live data synchronization across all modules
+### Core Management
+- **Team Creation & Management** - Create field teams with location-based ID generation and multi-KIT ID equipment tracking
+- **Canvasser Registration** - Professional registration with enhanced camera capture, GPS verification, and MDNL watermarking
+- **Role-Based Authentication** - Secure access for Admin, FAE (Field Area Executive), and Canvasser roles
+- **Real-time Dashboard** - Live metrics and performance tracking
+
+### Performance & Analytics
+- **Daily Performance Tracking** - Record GADs, SmartPhone Activations, and Others by date
+- **FAE Reporting** - Comprehensive performance analytics with daily totals and monthly summaries
+- **OKR Dashboard** - Track targets and actual performance with visual indicators
+- **Engagement Heatmap** - Geographic visualization of field activities
+- **Daily Productivity** - Canvasser performance metrics with inline editing
+
+### Field Operations
+- **Time Tracking** - Clock-in/clock-out with GPS location verification
+- **Turf Mapping** - Interactive territory management with polygon drawing
+- **Attendance Logging** - Complete attendance tracking with employee integration
+- **Activity Planning** - Calendar-based task and activity scheduling
+
+### Enhanced Features
+- **Professional Photo Capture** - MDNL watermarked photos with GPS coordinates and timestamps
+- **Equipment Management** - KIT ID tracking and assignment for accountability
+- **Location Verification** - High-accuracy GPS integration throughout the platform
+- **Mobile-Responsive** - Optimized for field use on mobile devices
+
+### Administrative Tools
+- **Admin Control Panel** - Complete database management interface
+- **Canvasser Approval** - Workflow for reviewing and approving new registrations
+- **User Management** - Comprehensive user administration
+- **Data Export** - CSV export capabilities for reporting and analysis
 
 ## Technology Stack
 

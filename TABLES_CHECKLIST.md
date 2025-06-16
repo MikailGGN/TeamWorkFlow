@@ -1,30 +1,35 @@
-# FieldForce Pro - Required Tables Checklist
+# FieldForce Pro - Database Tables Checklist
 
-## Required Tables for Supabase Database
+## Complete Database Structure (17 Tables)
 
 ### ✅ Core Authentication & User Management
-- [ ] **public.employees** - FAE and admin authentication
-- [ ] **public.profiles** - Canvasser profiles and user data  
-- [ ] **public.users** - Internal user management
+- [x] **public.employees** - FAE and admin authentication with role-based access
+- [x] **public.profiles** - Canvasser profiles with GPS photo capture and approval workflow
+- [x] **public.users** - Internal user management system
 
 ### ✅ Team & Task Management
-- [ ] **public.teams** - Team creation and management
-- [ ] **public.team_members** - Team membership relationships
-- [ ] **public.tasks** - Task assignment and tracking
+- [x] **public.teams** - Team creation with location-based ID generation and KIT ID tracking
+- [x] **public.team_members** - Team membership relationships and role assignments
+- [x] **public.tasks** - Task assignment and tracking with priority levels
 
-### ✅ Activity & Attendance Tracking
-- [ ] **public.attendance** - Daily attendance tracking
-- [ ] **public.canvasser_activities** - Activity logging
-- [ ] **public.canvasser_productivity** - Daily productivity metrics
-
-### ✅ Territory & Planning
-- [ ] **public.turfs** - Territory mapping and management
-- [ ] **public.activity_planner** - Activity scheduling
+### ✅ Field Operations & Time Tracking
+- [x] **public.attendance** - Daily attendance logging with location verification
+- [x] **public.time_clocked** - GPS-verified clock-in/clock-out system
+- [x] **public.canvasser_activities** - Field activity logging with photo capture
 
 ### ✅ Performance & Analytics
-- [ ] **public.okr_targets** - OKR target setting
-- [ ] **public.okr_actuals** - OKR performance tracking
-- [ ] **public.sales_metrics** - Sales performance data
+- [x] **public.canvasser_productivity** - Daily productivity metrics with inline editing
+- [x] **public.canvasser_performance** - Daily performance tracking (GADs, SmartPhone, Others)
+- [x] **public.okr_targets** - OKR target setting for sales performance
+- [x] **public.okr_actuals** - OKR performance tracking and results
+- [x] **public.sales_metrics** - Comprehensive sales performance data
+
+### ✅ Territory & Planning
+- [x] **public.turfs** - Interactive territory mapping with polygon boundaries
+- [x] **public.activity_planner** - Calendar-based activity scheduling
+
+### ✅ Equipment Management
+- [x] **public.kit_assignments** - Equipment KIT ID tracking and assignment management
 
 ## Key Column Requirements
 
@@ -89,7 +94,8 @@ AND table_name IN (
     'employees', 'profiles', 'users', 'teams', 'team_members', 
     'tasks', 'attendance', 'canvasser_activities', 'turfs', 
     'canvasser_productivity', 'activity_planner', 'okr_targets', 
-    'okr_actuals', 'sales_metrics'
+    'okr_actuals', 'sales_metrics', 'time_clocked', 'canvasser_performance',
+    'kit_assignments'
 ) ORDER BY table_name;
 
 -- Verify employees table structure
