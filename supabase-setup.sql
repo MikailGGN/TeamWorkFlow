@@ -400,6 +400,39 @@ INSERT INTO public.employees (email, full_name, role, department, phone, status)
 VALUES ('admin@company.com', 'Admin User', 'ADMIN', 'Management', '+0987654321', 'active')
 ON CONFLICT (email) DO NOTHING;
 
+-- 18. Create campaigns table
+CREATE TABLE IF NOT EXISTS public.campaigns (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    type TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft', -- draft, active, paused, completed
+    created_by TEXT,
+    teams JSONB, -- Array of team IDs
+    start_date TEXT,
+    end_date TEXT,
+    target_audience TEXT,
+    budget DECIMAL(12,2),
+    locations JSONB, -- Array of location objects with photos
+    objectives JSONB, -- Array of objectives
+    kpis JSONB, -- Array of KPIs
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 19. Create sim_collection table
+CREATE TABLE IF NOT EXISTS public.sim_collection (
+    id SERIAL PRIMARY KEY,
+    date TEXT NOT NULL,
+    useremail TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    source TEXT, -- vendor, customer, red_shop, asm, md
+    source_details TEXT,
+    allocation_type TEXT, -- return, distribution, transfer
+    allocation_details TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Summary Report
 SELECT 
     'Setup Complete' as status,
@@ -420,6 +453,6 @@ AND tablename IN (
     'tasks', 'attendance', 'canvasser_activities', 'turfs', 
     'canvasser_productivity', 'activity_planner', 'okr_targets', 
     'okr_actuals', 'sales_metrics', 'time_clocked', 'canvasser_performance',
-    'kit_assignments'
+    'kit_assignments', 'campaigns', 'sim_collection'
 )
 ORDER BY tablename;

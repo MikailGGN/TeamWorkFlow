@@ -263,6 +263,16 @@ After deployment, verify these key features work correctly:
 - [ ] Canvasser approval workflow by FAEs
 - [ ] Profile status management (pending, approved, rejected)
 
+### Campaign Management System
+- [ ] Campaign creation with comprehensive form handling
+- [ ] Location-based photo capture with GPS metadata overlay
+- [ ] Interactive map integration for location selection
+- [ ] Team assignment and multi-team coordination
+- [ ] Budget tracking and financial planning
+- [ ] Status workflow management (draft, active, paused, completed)
+- [ ] KPI and objectives tracking setup
+- [ ] MDNL photo branding with GPS coordinates and timestamps
+
 ### Enhanced Activity Planning
 - [ ] Interactive calendar view with monthly navigation
 - [ ] Color-coded activity types (Mega Activation, Mini Activation, etc.)

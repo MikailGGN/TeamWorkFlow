@@ -2,7 +2,16 @@
 
 A comprehensive field operations management platform featuring enhanced activity planning, SIM inventory tracking, advanced analytics, and team coordination with GPS verification and professional photo capture capabilities.
 
-## Latest Features (v2.1.0)
+## Latest Features (v2.2.0)
+
+### Campaign Management System
+- **Campaign Creation** - Complete campaign setup with name, description, type, and objectives
+- **Location-Based Photo Capture** - GPS-enabled photo documentation with metadata overlay
+- **Interactive Maps** - Location selection with coordinate capture for campaign sites
+- **Budget Tracking** - Financial planning and budget allocation management
+- **Team Assignment** - Multi-team campaign coordination and resource allocation
+- **Status Management** - Draft, active, paused, and completed campaign workflows
+- **KPI Tracking** - Key Performance Indicator setup and monitoring
 
 ### Enhanced Activity Planning System
 - **Interactive Calendar View** - Monthly calendar with click-to-plan functionality
