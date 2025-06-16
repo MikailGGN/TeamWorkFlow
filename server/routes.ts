@@ -87,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             role: employee.role,
             type: 'employee'
           },
-          redirectTo: employee.role === 'FAE' ? '/create-team' : '/dashboard'
+
         });
       }
 
@@ -117,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: user.role,
           type: 'user'
         },
-        redirectTo: '/dashboard'
+
       });
     } catch (error) {
       console.error("Sign in error:", error);

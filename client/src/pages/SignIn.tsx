@@ -91,8 +91,15 @@ export function SignIn() {
         localStorage.setItem("lastEmail", email);
       }
 
-      // Redirect based on user role and redirectTo response
-      const redirectPath = result.redirectTo || "/dashboard";
+      // Handle client-side routing based on user role
+      let redirectPath = "/dashboard";
+      
+      if (authenticatedUser?.role === "FAE") {
+        redirectPath = "/create-team";
+      } else if (authenticatedUser?.role === "ADMIN") {
+        redirectPath = "/admin-cpanel";
+      }
+      
       setLocation(redirectPath);
       toast({
         title: "Welcome back!",
