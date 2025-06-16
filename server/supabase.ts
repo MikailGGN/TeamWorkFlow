@@ -3,10 +3,13 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq } from "drizzle-orm";
 import { 
-  employees, profiles, canvasserActivities,
+  employees, profiles, canvasserActivities, roles, userRoles,
   type Employee, type InsertEmployee,
   type Profile, type InsertProfile,
-  type CanvasserActivity, type InsertCanvasserActivity
+  type CanvasserActivity, type InsertCanvasserActivity,
+  type Role, type InsertRole,
+  type UserRole, type InsertUserRole,
+  type UserWithRoles
 } from "@shared/schema";
 
 // Initialize Supabase client with URL and anon key (optional)
@@ -170,6 +173,121 @@ export class SupabaseStorage {
       .where(eq(canvasserActivities.id, id))
       .returning();
     return result[0];
+  }
+
+  // Role Management
+  async createRole(role: InsertRole): Promise<Role> {
+    const result = await db.insert(roles).values({
+      ...role,
+      createdAt: new Date()
+    }).returning();
+    return result[0];
+  }
+
+  async getAllRoles(): Promise<Role[]> {
+    return await db.select().from(roles);
+  }
+
+  async getRoleByName(name: string): Promise<Role | undefined> {
+    const result = await db.select().from(roles).where(eq(roles.name, name)).limit(1);
+    return result[0];
+  }
+
+  // User Role Management
+  async assignUserRole(userId: string, roleName: string): Promise<UserRole | undefined> {
+    try {
+      const role = await this.getRoleByName(roleName);
+      if (!role) {
+        console.error(`Role ${roleName} not found`);
+        return undefined;
+      }
+
+      const result = await db.insert(userRoles).values({
+        userId,
+        roleId: role.id,
+        createdAt: new Date()
+      }).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error assigning user role:', error);
+      return undefined;
+    }
+  }
+
+  async getUserRoles(userId: string): Promise<string[]> {
+    try {
+      const result = await db
+        .select({ roleName: roles.name })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(userRoles.userId, userId));
+      
+      return result.map(row => row.roleName);
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+      return [];
+    }
+  }
+
+  async getUserWithRoles(userId: string): Promise<UserWithRoles | null> {
+    try {
+      if (!supabase) return null;
+
+      // Get user from Supabase auth
+      const { data: { user }, error } = await supabase.auth.admin.getUserById(userId);
+      if (error || !user) return null;
+
+      // Get user roles
+      const roles = await this.getUserRoles(userId);
+
+      // Get employee data if user has FAE/ADMIN role
+      let employee = null;
+      if (roles.includes('FAE') || roles.includes('ADMIN')) {
+        employee = await this.getEmployeeBySupabaseUserId(userId);
+      }
+
+      return {
+        id: userId,
+        email: user.email || null,
+        roles,
+        employee
+      };
+    } catch (error) {
+      console.error('Error getting user with roles:', error);
+      return null;
+    }
+  }
+
+  async getEmployeeBySupabaseUserId(supabaseUserId: string): Promise<Employee | undefined> {
+    try {
+      const result = await db.select().from(employees).where(eq(employees.supabaseUserId, supabaseUserId)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Error fetching employee by Supabase user ID:', error);
+      return undefined;
+    }
+  }
+
+  // Initialize default roles
+  async initializeRoles(): Promise<void> {
+    try {
+      const defaultRoles = [
+        { name: 'FAE', description: 'Field Area Engineer', permissions: ['create_teams', 'manage_canvassers', 'view_reports'] },
+        { name: 'ADMIN', description: 'Administrator', permissions: ['full_access'] },
+        { name: 'CANVASSER', description: 'Canvasser', permissions: ['update_profile', 'submit_activities'] },
+        { name: 'SUPERVISOR', description: 'Supervisor', permissions: ['view_teams', 'view_reports'] }
+      ];
+
+      for (const roleData of defaultRoles) {
+        const existingRole = await this.getRoleByName(roleData.name);
+        if (!existingRole) {
+          await this.createRole(roleData);
+          console.log(`Created role: ${roleData.name}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing roles:', error);
+    }
   }
 }
 

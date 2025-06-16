@@ -247,6 +247,8 @@ export const campaigns = pgTable("campaigns", {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true });
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({ id: true, createdAt: true });
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, createdAt: true });
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, completedAt: true });
@@ -316,8 +318,6 @@ export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
 
 // Role-based authentication types
-export type InsertEmployee = typeof employees.$inferInsert;
-export type Employee = typeof employees.$inferSelect;
 export type InsertRole = typeof roles.$inferInsert;
 export type Role = typeof roles.$inferSelect;
 export type InsertUserRole = typeof userRoles.$inferInsert;

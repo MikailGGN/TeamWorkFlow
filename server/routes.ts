@@ -45,6 +45,81 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize roles and setup
+  app.post("/api/setup/init", async (req, res) => {
+    try {
+      console.log('Initializing roles and system setup...');
+      
+      // Initialize default roles
+      await supabaseStorage.initializeRoles();
+      
+      res.json({ 
+        message: 'System initialized successfully',
+        roles: await supabaseStorage.getAllRoles()
+      });
+    } catch (error) {
+      console.error('Error initializing system:', error);
+      res.status(500).json({ error: 'Failed to initialize system', details: error.message });
+    }
+  });
+
+  // Supabase auth-based authentication
+  app.post("/api/auth/supabase-signin", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: 'Supabase client not available' });
+      }
+
+      const { email, password } = signInSchema.parse(req.body);
+      console.log("Supabase login attempt for:", email);
+
+      // Sign in with Supabase auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error('Supabase auth error:', error);
+        return res.status(401).json({ error: error.message });
+      }
+
+      if (data.user) {
+        // Get user with roles
+        const userWithRoles = await supabaseStorage.getUserWithRoles(data.user.id);
+        
+        if (!userWithRoles) {
+          return res.status(401).json({ error: 'User not found or unauthorized' });
+        }
+
+        console.log("User authenticated with roles:", userWithRoles.roles);
+
+        // Create JWT token with role information
+        const token = jwt.sign(
+          { 
+            id: userWithRoles.id, 
+            email: userWithRoles.email, 
+            roles: userWithRoles.roles,
+            type: 'supabase' 
+          },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          token,
+          user: userWithRoles,
+          session: data.session
+        });
+      }
+
+      return res.status(401).json({ error: 'Authentication failed' });
+    } catch (error) {
+      console.error('Supabase signin error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Setup route for initializing employees table
   app.post("/api/setup/employees", async (req, res) => {
     try {
