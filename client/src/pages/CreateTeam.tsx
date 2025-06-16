@@ -27,6 +27,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { InsertTeam, Profile, CanvasserRegistration } from "@shared/schema";
+import { EnhancedCamera } from '@/components/EnhancedCamera';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 
@@ -797,33 +798,57 @@ export default function CreateTeam() {
                         </p>
                       </div>
 
-                      {/* Photo Upload */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Profile Photo</Label>
-                        <div className="mt-2 flex items-center gap-4">
-                          {photoPreview ? (
-                            <img src={photoPreview} alt="Preview" className="w-16 h-16 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                              <Camera className="w-6 h-6 text-gray-400" />
+                      {/* Enhanced Photo Capture */}
+                      <div className="space-y-4">
+                        <Label className="text-sm font-medium text-gray-700">Profile Photo with GPS Verification</Label>
+                        
+                        {photoPreview ? (
+                          <div className="flex items-center gap-4">
+                            <img src={photoPreview} alt="Canvasser Photo" className="w-20 h-20 rounded-lg object-cover border-2 border-green-200" />
+                            <div className="flex flex-col gap-2">
+                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                <Check className="w-3 h-3 mr-1" />
+                                Photo Captured with GPS
+                              </Badge>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setPhotoPreview(null);
+                                  setCanvasserForm(prev => ({ ...prev, photo: null }));
+                                }}
+                              >
+                                <X className="w-3 h-3 mr-1" />
+                                Retake Photo
+                              </Button>
                             </div>
-                          )}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <Camera className="w-4 h-4 mr-2" />
-                            {photoPreview ? "Change Photo" : "Add Photo"}
-                          </Button>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoUpload}
-                            className="hidden"
-                          />
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                            <EnhancedCamera
+                              onPhotoCapture={(photoBlob) => {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                  const photoDataUrl = e.target?.result as string;
+                                  setPhotoPreview(photoDataUrl);
+                                  setCanvasserForm(prev => ({ ...prev, photo: photoBlob }));
+                                };
+                                reader.readAsDataURL(photoBlob);
+                              }}
+                              watermarkText={`Canvasser Registration - ${new Date().toLocaleDateString()}`}
+                              className="w-full"
+                            />
+                            <div className="mt-2 text-center">
+                              <p className="text-sm text-gray-600">
+                                Take a professional photo with GPS coordinates and MDNL watermark
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Photo will include location verification and timestamp
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Location Section */}
