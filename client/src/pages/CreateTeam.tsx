@@ -435,7 +435,7 @@ export default function CreateTeam() {
             <Tabs defaultValue="create-team" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="create-team" className="flex items-center gap-2">
-                  <Target className="w-4 h-4" />
+                  <Users className="w-4 h-4" />
                   Create Team
                 </TabsTrigger>
                 <TabsTrigger value="register-canvasser" className="flex items-center gap-2">
@@ -646,7 +646,7 @@ export default function CreateTeam() {
 
                         {kitIds.length === 0 && (
                           <div className="text-center py-6 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-                            <Target className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <Plus className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                             <p className="text-sm">No KIT IDs added yet</p>
                             <p className="text-xs">Add equipment KIT IDs to assign to team members</p>
                           </div>
