@@ -19,7 +19,6 @@ import {
   Check,
   X,
   Users,
-  Target,
   UserCheck
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -70,7 +69,6 @@ export default function CreateTeam() {
     phone: "",
     nin: "",
     smartCashAccount: "",
-    location: undefined,
     photo: undefined,
     teamId: ""
   });
@@ -132,28 +130,7 @@ export default function CreateTeam() {
 
 
 
-  // Get current location for team
-  const getTeamLocation = (): Promise<{lat: number, lng: number}> => {
-    return new Promise((resolve, reject) => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            setTeamLocation(location);
-            resolve(location);
-          },
-          (error) => {
-            reject(error);
-          }
-        );
-      } else {
-        reject(new Error("Geolocation not supported"));
-      }
-    });
-  };
+
 
   // Fetch existing canvassers
   const { data: canvassers = [], isLoading: canvassersLoading } = useQuery({
@@ -243,38 +220,22 @@ export default function CreateTeam() {
       return;
     }
 
-    try {
-      // Get current location for team creation
-      const location = await getTeamLocation();
-      
-      // Generate unique team ID
-      const generatedTeamId = generateTeamId(formData.name, location);
-      
-      // Prepare team data for submission
-      const teamData = {
-        name: formData.name,
-        description: formData.description,
-        category: formData.category,
-        activityType: formData.activityType,
-        channels: formData.channels.join(', '), // Convert array to comma-separated string for storage
-        kitId: formData.kitId,
-        teamId: generatedTeamId,
-        location: {
-          lat: location.lat,
-          lng: location.lng,
-          address: `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
-        },
-        date: new Date()
-      };
+    // Generate unique team ID based on timestamp and name
+    const generatedTeamId = `${Date.now()}-${formData.name.replace(/\s+/g, '').substring(0, 6).toUpperCase()}`;
+    
+    // Prepare team data for submission
+    const teamData = {
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      activityType: formData.activityType,
+      channels: formData.channels.join(', '), // Convert array to comma-separated string for storage
+      kitId: formData.kitId,
+      teamId: generatedTeamId,
+      date: new Date()
+    };
 
-      createTeamMutation.mutate(teamData);
-    } catch (error) {
-      toast({
-        title: "Location Error",
-        description: "Unable to get location. Please allow location access and try again.",
-        variant: "destructive",
-      });
-    }
+    createTeamMutation.mutate(teamData);
   };
 
   // LocalStorage functions for canvasser management
@@ -606,51 +567,13 @@ export default function CreateTeam() {
 
                     <div>
                       <Label className="text-sm font-medium text-gray-700">
-                        Team Location & ID Generation
+                        Team ID Generation
                       </Label>
-                      <div className="mt-2 flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={async () => {
-                            try {
-                              await getTeamLocation();
-                              toast({
-                                title: "Location Captured",
-                                description: "Team location has been captured successfully.",
-                              });
-                            } catch (error) {
-                              toast({
-                                title: "Location Error",
-                                description: "Unable to get location. Please enable location access.",
-                                variant: "destructive",
-                              });
-                            }
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <Target className="w-4 h-4" />
-                          Set Team Goal
-                        </Button>
-                        {teamLocation && formData.name && (
-                          <Badge variant="secondary" className="text-xs">
-                            ID: {generateTeamId(formData.name, teamLocation)}
-                          </Badge>
-                        )}
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">
+                          A unique team ID will be automatically generated when you create the team
+                        </p>
                       </div>
-                      {teamLocation && (
-                        <div className="mt-3 bg-blue-50 p-3 rounded-lg">
-                          <h4 className="text-sm font-medium text-blue-900 mb-1">Location Captured</h4>
-                          <p className="text-xs text-blue-700">
-                            {teamLocation.lat.toFixed(6)}, {teamLocation.lng.toFixed(6)}
-                          </p>
-                          {formData.name && (
-                            <p className="text-xs text-blue-700 mt-1">
-                              Generated Team ID: <strong>{generateTeamId(formData.name, teamLocation)}</strong>
-                            </p>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     {/* KIT ID Management Section */}
