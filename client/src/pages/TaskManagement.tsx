@@ -16,16 +16,29 @@ import { Sidebar } from '@/components/Sidebar';
 import { apiRequest } from '@/lib/queryClient';
 import type { Task, InsertTask, Team, ActivityPlanner, InsertActivityPlanner, Employee } from '@shared/schema';
 
-// Activity types with colors for calendar visualization
+// Activity types with colors matching the enhanced activity planner
 const ACTIVITY_TYPES = [
-  { value: 'MEGA_ROADSHOW', label: 'MEGA Roadshow', color: '#FF6B6B' },
-  { value: 'MIDI_ACTIVATION', label: 'MIDI Activation', color: '#4ECDC4' },
-  { value: 'MINI_BOOTH', label: 'MINI Booth', color: '#45B7D1' },
-  { value: 'DOOR_TO_DOOR', label: 'Door to Door', color: '#96CEB4' },
-  { value: 'CORPORATE_VISIT', label: 'Corporate Visit', color: '#FFEAA7' },
-  { value: 'TRAINING_SESSION', label: 'Training Session', color: '#DDA0DD' },
-  { value: 'FIELD_SURVEY', label: 'Field Survey', color: '#98D8C8' },
-  { value: 'COMMUNITY_EVENT', label: 'Community Event', color: '#F7DC6F' },
+  { value: 'Mega Activation', label: 'Mega Activation', color: '#ffb6c1' },
+  { value: 'Mini Activation', label: 'Mini Activation', color: '#87cefa' },
+  { value: 'New Site Activation', label: 'New Site Activation', color: '#90ee90' },
+  { value: 'New Site Launch', label: 'New Site Launch', color: '#ffa500' },
+  { value: 'Service Camp', label: 'Service Camp', color: '#da70d6' }
+];
+
+// Task priority levels
+const TASK_PRIORITIES = [
+  { value: 'low', label: 'Low', color: '#10b981' },
+  { value: 'medium', label: 'Medium', color: '#f59e0b' },
+  { value: 'high', label: 'High', color: '#ef4444' },
+  { value: 'urgent', label: 'Urgent', color: '#dc2626' }
+];
+
+// Task status options
+const TASK_STATUSES = [
+  { value: 'pending', label: 'Pending', color: '#6b7280' },
+  { value: 'in_progress', label: 'In Progress', color: '#3b82f6' },
+  { value: 'completed', label: 'Completed', color: '#10b981' },
+  { value: 'cancelled', label: 'Cancelled', color: '#ef4444' }
 ];
 
 function TableLoading() {
