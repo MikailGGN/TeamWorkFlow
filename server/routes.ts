@@ -14,7 +14,7 @@ interface AuthRequest extends Request {
 }
 
 // Middleware to verify JWT token
-const authenticateToken = async (req: AuthRequest, res: any, next: any) => {
+const authenticateToken = async (req: AuthRequest, res: Response, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 

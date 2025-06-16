@@ -41,25 +41,21 @@ app.use((req, res, next) => {
   // Log the database connection method being used
   logConnectionMethod();
   
+  // Register API routes BEFORE error handling and static serving
   const server = await registerRoutes(app);
 
+  // Error handling middleware (must be after routes)
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error('Server error:', err);
   });
 
 
 
-  // Add explicit API route fallback handler for production
-  if (app.get("env") === "production") {
-    // Handle any unmatched API routes before static serving
-    app.use('/api/*', (req, res) => {
-      res.status(404).json({ error: 'API endpoint not found', path: req.path });
-    });
-  }
+
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
