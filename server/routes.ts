@@ -45,6 +45,53 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup route for initializing employees table
+  app.post("/api/setup/employees", async (req, res) => {
+    try {
+      console.log('Setting up employees table with initial data...');
+      
+      // Check if employees already exist
+      const existingEmployees = await supabaseStorage.getAllEmployees();
+      if (existingEmployees.length > 0) {
+        return res.json({ 
+          message: 'Employees already exist', 
+          count: existingEmployees.length,
+          employees: existingEmployees 
+        });
+      }
+
+      // Create FAE employee
+      const faeEmployee = await supabaseStorage.createEmployee({
+        email: 'fae@company.com',
+        fullName: 'John Doe - Field Area Executive',
+        role: 'FAE',
+        department: 'Field Operations',
+        phone: '+1234567890',
+        status: 'active'
+      });
+      console.log('Created FAE employee:', faeEmployee.email);
+
+      // Create Admin employee
+      const adminEmployee = await supabaseStorage.createEmployee({
+        email: 'admin@company.com',
+        fullName: 'Jane Smith - Administrator',
+        role: 'ADMIN',
+        department: 'Administration',
+        phone: '+1234567891',
+        status: 'active'
+      });
+      console.log('Created Admin employee:', adminEmployee.email);
+
+      res.json({ 
+        message: 'Employees setup completed successfully!',
+        employees: [faeEmployee, adminEmployee]
+      });
+    } catch (error) {
+      console.error('Error setting up employees:', error);
+      res.status(500).json({ error: 'Failed to setup employees', details: error.message });
+    }
+  });
+
   // Auth routes
   app.post("/api/auth/signin", async (req, res) => {
     try {

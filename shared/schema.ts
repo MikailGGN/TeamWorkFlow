@@ -20,8 +20,26 @@ export const employees = pgTable("employees", {
   department: text("department"),
   phone: text("phone"),
   status: text("status").notNull().default("active"), // active, inactive
+  supabaseUserId: uuid("supabase_user_id").unique(), // Link to Supabase auth.users
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Roles table for role-based access control
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // 'FAE', 'ADMIN', 'CANVASSER', 'SUPERVISOR'
+  description: text("description"),
+  permissions: jsonb("permissions").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User roles junction table
+export const userRoles = pgTable("user_roles", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").notNull(), // References Supabase auth.users.id
+  roleId: integer("role_id").notNull().references(() => roles.id),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Profiles table to match Supabase public.profiles
@@ -296,3 +314,19 @@ export type Campaign = typeof campaigns.$inferSelect;
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
+
+// Role-based authentication types
+export type InsertEmployee = typeof employees.$inferInsert;
+export type Employee = typeof employees.$inferSelect;
+export type InsertRole = typeof roles.$inferInsert;
+export type Role = typeof roles.$inferSelect;
+export type InsertUserRole = typeof userRoles.$inferInsert;
+export type UserRole = typeof userRoles.$inferSelect;
+
+// Enhanced user type with roles for Supabase auth
+export interface UserWithRoles {
+  id: string;
+  email: string | null;
+  roles: string[];
+  employee?: Employee;
+}
