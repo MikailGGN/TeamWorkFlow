@@ -60,55 +60,46 @@ export function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
   const { setSession, isAuthenticated } = useSession();
+  const { signIn, user } = useAuth();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated with Supabase
   useEffect(() => {
-    if (isAuthenticated) {
-      setLocation("/dashboard");
+    if (user) {
+      const redirectPath = user.roles.includes('FAE') ? '/create-team' : 
+                          user.roles.includes('ADMIN') ? '/admin-cpanel' : '/dashboard';
+      setLocation(redirectPath);
     }
-  }, [isAuthenticated, setLocation]);
+  }, [user, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await authManager.signIn(email, password);
-    
-    if (result.success) {
-      // Get user data from auth manager after successful login
-      const authenticatedUser = authManager.getUser();
+    try {
+      const { data, error } = await signIn(email, password);
       
-      // Set session data using centralized session management
-      setSession(
-        authenticatedUser?.name || authenticatedUser?.email || email,
-        authenticatedUser?.id?.toString() || "unknown",
-        authenticatedUser?.role || "user"
-      );
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message || "Please check your credentials and try again.",
+          variant: "destructive",
+        });
+      } else if (data.user) {
+        // Save remember me preferences
+        if (rememberMe) {
+          localStorage.setItem("rememberMe", "true");
+          localStorage.setItem("lastEmail", email);
+        }
 
-      // Save additional data to localStorage if remember me is checked
-      if (rememberMe) {
-        localStorage.setItem("rememberMe", "true");
-        localStorage.setItem("lastEmail", email);
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in with Supabase authentication.",
+        });
       }
-
-      // Handle client-side routing based on user role
-      let redirectPath = "/dashboard";
-      
-      if (authenticatedUser?.role === "FAE") {
-        redirectPath = "/create-team";
-      } else if (authenticatedUser?.role === "ADMIN") {
-        redirectPath = "/admin-cpanel";
-      }
-      
-      setLocation(redirectPath);
+    } catch (error) {
       toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
-    } else {
-      toast({
-        title: "Sign in failed",
-        description: result.error || "Please check your credentials and try again.",
+        title: "Authentication error",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
