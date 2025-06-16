@@ -8,23 +8,25 @@
 import type { Express, Request, Response, NextFunction } from "express";
 
 export function applyProductionAPIFix(app: Express) {
-  // Add middleware to log API requests in production
-  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-    console.log(`[PRODUCTION] API Request: ${req.method} ${req.originalUrl}`);
-    next();
-  });
-
-  // Ensure API routes take precedence over static files
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/api/')) {
-      // This middleware only runs if no API route matched
-      console.log(`[PRODUCTION] Unmatched API route: ${req.method} ${req.path}`);
-      return res.status(404).json({ 
-        error: 'API endpoint not found', 
+  // Add middleware to handle unmatched API routes ONLY
+  // This runs after all API routes have been registered
+  app.use('/api/*', (req: Request, res: Response) => {
+    console.log(`[PRODUCTION] Unmatched API route: ${req.method} ${req.originalUrl}`);
+    
+    // Provide helpful error messages for common issues
+    if (req.path === '/api/auth/signin' && req.method === 'GET') {
+      return res.status(405).json({ 
+        error: 'Method not allowed', 
+        message: 'This endpoint only accepts POST requests',
         path: req.path,
         method: req.method 
       });
     }
-    next();
+    
+    return res.status(404).json({ 
+      error: 'API endpoint not found', 
+      path: req.path,
+      method: req.method 
+    });
   });
 }

@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { logConnectionMethod } from "./supabase-config";
-import { applyProductionAPIFix } from "./production-fix";
+import { serveStaticWithAPIProtection } from "./static-fix";
 
 const app = express();
 app.use(express.json());
@@ -69,9 +69,7 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    // Apply production API fix before static serving
-    applyProductionAPIFix(app);
-    serveStatic(app);
+    serveStaticWithAPIProtection(app);
   }
 
   // ALWAYS serve the app on port 5000
