@@ -872,7 +872,7 @@ export default function CreateTeam() {
                         <Input
                           id="faeEmail"
                           type="email"
-                          value={currentUser?.email || 'Loading...'}
+                          value={(currentUser as any)?.email || 'Loading...'}
                           readOnly
                           className="mt-1 bg-gray-50 text-gray-700"
                         />
@@ -915,11 +915,11 @@ export default function CreateTeam() {
                                 reader.onload = (e) => {
                                   const photoDataUrl = e.target?.result as string;
                                   setPhotoPreview(photoDataUrl);
-                                  setCanvasserForm(prev => ({ ...prev, photo: photoBlob }));
+                                  setCanvasserForm(prev => ({ ...prev, photo: photoDataUrl }));
                                 };
                                 reader.readAsDataURL(photoBlob);
                               }}
-                              watermarkText={`Canvasser Registration - ${new Date().toLocaleDateString()}`}
+
                               className="w-full"
                             />
                             <div className="mt-2 text-center">
@@ -973,7 +973,7 @@ export default function CreateTeam() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
                   <p className="text-gray-500 mt-2">Loading canvassers...</p>
                 </div>
-              ) : canvassers.length === 0 ? (
+              ) : (canvassers as any[]).length === 0 ? (
                 <div className="text-center py-8">
                   <UserPlus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">No canvassers registered yet</p>
