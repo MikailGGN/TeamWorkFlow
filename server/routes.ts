@@ -966,6 +966,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SIM Collection API routes
+  app.get("/api/sim-collection", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const collections = await storage.getAllSimCollections();
+      res.json(collections);
+    } catch (error) {
+      console.error("Error fetching SIM collections:", error);
+      res.status(500).json({ error: "Failed to fetch SIM collections" });
+    }
+  });
+
+  app.post("/api/sim-collection", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { date, quantity, source, source_details, allocation_type, allocation_details } = req.body;
+      
+      if (!date || !quantity || quantity <= 0) {
+        return res.status(400).json({ error: "Date and quantity are required" });
+      }
+
+      if (!source && !allocation_type) {
+        return res.status(400).json({ error: "Either source or allocation type is required" });
+      }
+
+      const collection = await storage.createSimCollection({
+        date,
+        quantity,
+        source: source || null,
+        sourceDetails: source_details || null,
+        allocationType: allocation_type || null,
+        allocationDetails: allocation_details || null,
+        useremail: req.user!.email
+      });
+
+      res.json(collection);
+    } catch (error) {
+      console.error("Error creating SIM collection:", error);
+      res.status(500).json({ error: "Failed to create SIM collection" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

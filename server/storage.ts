@@ -1,5 +1,5 @@
 import { 
-  users, teams, teamMembers, tasks, attendance, profiles, employees, canvasserActivities, turfs,
+  users, teams, teamMembers, tasks, attendance, profiles, employees, canvasserActivities, turfs, simCollection,
   type User, type InsertUser, type Team, type InsertTeam, 
   type TeamMember, type Task, type InsertTask, 
   type Attendance, type InsertAttendance, type Profile, type InsertProfile,
@@ -9,7 +9,8 @@ import {
   type ActivityPlanner, type InsertActivityPlanner,
   type OkrTarget, type InsertOkrTarget,
   type OkrActual, type InsertOkrActual,
-  type SalesMetric, type InsertSalesMetric
+  type SalesMetric, type InsertSalesMetric,
+  type SimCollection, type InsertSimCollection
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -102,6 +103,11 @@ export interface IStorage {
   createSalesMetric(metric: InsertSalesMetric): Promise<SalesMetric>;
   getAllSalesMetrics(): Promise<SalesMetric[]>;
   getSalesMetricsByPeriod(period: string): Promise<SalesMetric[]>;
+
+  // SIM Collection
+  createSimCollection(collection: InsertSimCollection): Promise<SimCollection>;
+  getAllSimCollections(): Promise<SimCollection[]>;
+  getSimCollectionsByUser(useremail: string): Promise<SimCollection[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -117,6 +123,7 @@ export class MemStorage implements IStorage {
   private okrTargets: Map<number, OkrTarget> = new Map();
   private okrActuals: Map<number, OkrActual> = new Map();
   private salesMetrics: Map<number, SalesMetric> = new Map();
+  private simCollections: Map<number, SimCollection> = new Map();
   
   private userIdSeq = 1;
   private teamIdSeq = 1;
@@ -129,6 +136,7 @@ export class MemStorage implements IStorage {
   private okrTargetIdSeq = 1;
   private okrActualIdSeq = 1;
   private salesMetricIdSeq = 1;
+  private simCollectionIdSeq = 1;
 
   constructor() {
     // Create default admin user
@@ -606,6 +614,26 @@ export class MemStorage implements IStorage {
 
   async getSalesMetricsByPeriod(period: string): Promise<SalesMetric[]> {
     return Array.from(this.salesMetrics.values()).filter(metric => metric.period === period);
+  }
+
+  // SIM Collection methods
+  async createSimCollection(collection: InsertSimCollection): Promise<SimCollection> {
+    const id = this.simCollectionIdSeq++;
+    const newCollection: SimCollection = {
+      ...collection,
+      id,
+      createdAt: new Date(),
+    };
+    this.simCollections.set(id, newCollection);
+    return newCollection;
+  }
+
+  async getAllSimCollections(): Promise<SimCollection[]> {
+    return Array.from(this.simCollections.values());
+  }
+
+  async getSimCollectionsByUser(useremail: string): Promise<SimCollection[]> {
+    return Array.from(this.simCollections.values()).filter(collection => collection.useremail === useremail);
   }
 }
 
