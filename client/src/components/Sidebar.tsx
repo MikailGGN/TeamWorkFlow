@@ -12,13 +12,15 @@ import {
   MapPin,
   Activity,
   Target,
-  Settings
+  Settings,
+  Megaphone
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 
 const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/create-team", label: "Create Team", icon: Users },
+  { path: "/campaign-setup", label: "Campaign Setup", icon: Megaphone },
   { path: "/canvasser-approval", label: "Canvasser Approval", icon: UserCheck },
   { path: "/turf-mapping", label: "Turf Mapping", icon: MapPin },
   { path: "/engagement-heatmap", label: "Engagement Heatmap", icon: Activity },
