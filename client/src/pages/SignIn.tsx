@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BarChart3, Shield, Users, Target, TrendingUp, Eye, EyeOff } from "lucide-react";
-import { authManager } from "@/lib/auth";
+import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/lib/SessionContext";
 import marbleDeeImage from "@assets/Marbledee-IWD2025_1749987380484.png";

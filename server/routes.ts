@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import { supabaseStorage } from "./supabase";
+import { supabaseStorage, supabase } from "./supabase";
 import { signInSchema, insertUserSchema, insertTeamSchema, insertTaskSchema, insertAttendanceSchema } from "@shared/schema";
 import { z } from "zod";
 
