@@ -45,6 +45,8 @@ app.use((req, res, next) => {
   // Register API routes BEFORE error handling and static serving
   const server = await registerRoutes(app);
 
+
+
   // Add production API route debugging
   if (app.get("env") === "production") {
     console.log('Production mode: API routes registered');
