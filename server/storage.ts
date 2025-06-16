@@ -1,5 +1,5 @@
 import { 
-  users, teams, teamMembers, tasks, attendance, profiles, employees, canvasserActivities, turfs, simCollection,
+  users, teams, teamMembers, tasks, attendance, profiles, employees, canvasserActivities, turfs, simCollection, campaigns,
   type User, type InsertUser, type Team, type InsertTeam, 
   type TeamMember, type Task, type InsertTask, 
   type Attendance, type InsertAttendance, type Profile, type InsertProfile,
@@ -10,7 +10,8 @@ import {
   type OkrTarget, type InsertOkrTarget,
   type OkrActual, type InsertOkrActual,
   type SalesMetric, type InsertSalesMetric,
-  type SimCollection, type InsertSimCollection
+  type SimCollection, type InsertSimCollection,
+  type Campaign, type InsertCampaign
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -108,6 +109,13 @@ export interface IStorage {
   createSimCollection(collection: InsertSimCollection): Promise<SimCollection>;
   getAllSimCollections(): Promise<SimCollection[]>;
   getSimCollectionsByUser(useremail: string): Promise<SimCollection[]>;
+
+  // Campaigns
+  createCampaign(campaign: InsertCampaign): Promise<Campaign>;
+  getAllCampaigns(): Promise<Campaign[]>;
+  getCampaign(id: number): Promise<Campaign | undefined>;
+  updateCampaign(id: number, campaign: Partial<InsertCampaign>): Promise<Campaign | undefined>;
+  deleteCampaign(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -124,6 +132,7 @@ export class MemStorage implements IStorage {
   private okrActuals: Map<number, OkrActual> = new Map();
   private salesMetrics: Map<number, SalesMetric> = new Map();
   private simCollections: Map<number, SimCollection> = new Map();
+  private campaigns: Map<number, Campaign> = new Map();
   
   private userIdSeq = 1;
   private teamIdSeq = 1;
@@ -137,6 +146,7 @@ export class MemStorage implements IStorage {
   private okrActualIdSeq = 1;
   private salesMetricIdSeq = 1;
   private simCollectionIdSeq = 1;
+  private campaignIdSeq = 1;
 
   constructor() {
     // Create default admin user
@@ -634,6 +644,44 @@ export class MemStorage implements IStorage {
 
   async getSimCollectionsByUser(useremail: string): Promise<SimCollection[]> {
     return Array.from(this.simCollections.values()).filter(collection => collection.useremail === useremail);
+  }
+
+  // Campaigns
+  async createCampaign(campaignData: InsertCampaign): Promise<Campaign> {
+    const id = this.campaignIdSeq++;
+    const campaign: Campaign = {
+      id,
+      ...campaignData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.campaigns.set(id, campaign);
+    return campaign;
+  }
+
+  async getAllCampaigns(): Promise<Campaign[]> {
+    return Array.from(this.campaigns.values());
+  }
+
+  async getCampaign(id: number): Promise<Campaign | undefined> {
+    return this.campaigns.get(id);
+  }
+
+  async updateCampaign(id: number, campaignData: Partial<InsertCampaign>): Promise<Campaign | undefined> {
+    const campaign = this.campaigns.get(id);
+    if (!campaign) return undefined;
+    
+    const updatedCampaign: Campaign = {
+      ...campaign,
+      ...campaignData,
+      updatedAt: new Date()
+    };
+    this.campaigns.set(id, updatedCampaign);
+    return updatedCampaign;
+  }
+
+  async deleteCampaign(id: number): Promise<boolean> {
+    return this.campaigns.delete(id);
   }
 }
 

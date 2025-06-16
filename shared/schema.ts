@@ -292,5 +292,7 @@ export type SalesMetric = typeof salesMetrics.$inferSelect;
 export type InsertSalesMetric = z.infer<typeof insertSalesMetricSchema>;
 export type SimCollection = typeof simCollection.$inferSelect;
 export type InsertSimCollection = z.infer<typeof insertSimCollectionSchema>;
+export type Campaign = typeof campaigns.$inferSelect;
+export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
