@@ -104,7 +104,6 @@ export default function CreateTeam() {
   });
 
   const [selectedCanvassers, setSelectedCanvassers] = useState<string[]>([]);
-  const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showCanvasserDialog, setShowCanvasserDialog] = useState(false);
   const [storedCanvassersCount, setStoredCanvassersCount] = useState(0);
@@ -264,7 +263,6 @@ export default function CreateTeam() {
       photo: undefined,
       teamId: ""
     });
-    setMapPosition(null);
     setPhotoPreview(null);
   };
 
@@ -367,11 +365,7 @@ export default function CreateTeam() {
       faeEmail: currentUser?.email || 'unknown@fae.com', // Include FAE email
       teamName: 'Pending Assignment', // No team selected yet
       teamId: '', // Will be assigned during approval
-      location: mapPosition ? {
-        lat: mapPosition[0],
-        lng: mapPosition[1],
-        address: `${mapPosition[0].toFixed(6)}, ${mapPosition[1].toFixed(6)}`
-      } : undefined,
+
       photo: photoPreview || undefined
     };
 
@@ -400,29 +394,7 @@ export default function CreateTeam() {
     }
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const pos: [number, number] = [position.coords.latitude, position.coords.longitude];
-          setMapPosition(pos);
-        },
-        (error) => {
-          toast({
-            title: "Location Error",
-            description: "Unable to get your location. Please click on the map to select.",
-            variant: "destructive",
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Location Not Supported",
-        description: "Geolocation is not supported by this browser.",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const handleCanvasserInputChange = (field: keyof CanvasserRegistration, value: string) => {
     let processedValue = value;
@@ -987,26 +959,7 @@ export default function CreateTeam() {
                         )}
                       </div>
 
-                      {/* Location Section */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Location</Label>
-                        <div className="mt-2 flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={getCurrentLocation}
-                            className="flex items-center gap-2"
-                          >
-                            <MapPin className="w-4 h-4" />
-                            Use Current Location
-                          </Button>
-                          {mapPosition && (
-                            <Badge variant="secondary">
-                              {mapPosition[0].toFixed(4)}, {mapPosition[1].toFixed(4)}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+
 
                       <div className="flex justify-end space-x-3 pt-6">
                         <Button
@@ -1027,26 +980,7 @@ export default function CreateTeam() {
                     </form>
                   </div>
 
-                  {/* Map */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Location</h3>
-                    <div className="h-96 rounded-lg overflow-hidden border">
-                      <MapContainer
-                        center={[9.0820, 8.6753]} // Nigeria center coordinates
-                        zoom={6}
-                        style={{ height: '100%', width: '100%' }}
-                      >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-                        />
-                        <LocationPicker position={mapPosition} setPosition={setMapPosition} />
-                      </MapContainer>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Click on the map to select a location or use "Use Current Location" button
-                    </p>
-                  </div>
+
                 </div>
               </TabsContent>
             </Tabs>
