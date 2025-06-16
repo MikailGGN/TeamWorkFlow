@@ -52,30 +52,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Supabase client not available' });
       }
 
-      // Test connection by querying tables
+      // Check if tables exist and their schema
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
         .select('*')
-        .limit(1);
+        .limit(0);
 
       const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
         .select('*')
-        .limit(1);
+        .limit(0);
+
+      // Try to get table structure information
+      let schemaInfo = {};
+      try {
+        const { data: tableInfo } = await supabase
+          .rpc('get_schema_info');
+        schemaInfo = tableInfo;
+      } catch (e) {
+        // Ignore if RPC doesn't exist
+      }
 
       res.json({
         status: 'connected',
         message: 'Supabase connection successful',
         tables: {
           employees: {
-            error: employeesError?.message,
-            sample: employeesData?.[0] || 'No data'
+            exists: !employeesError,
+            error: employeesError?.message || null
           },
           roles: {
-            error: rolesError?.message,
-            sample: rolesData?.[0] || 'No data'
+            exists: !rolesError,
+            error: rolesError?.message || null
           }
-        }
+        },
+        schemaInfo
       });
     } catch (error) {
       res.status(500).json({ 
@@ -131,10 +142,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       `;
 
-      // Execute SQL commands using RPC
-      await supabase.rpc('exec_sql', { sql: createRolesSQL });
-      await supabase.rpc('exec_sql', { sql: createUserRolesSQL });
-      await supabase.rpc('exec_sql', { sql: createEmployeesSQL });
+      // Add supabase_user_id column to existing employees table
+      const addSupabaseUserIdSQL = `
+        ALTER TABLE employees 
+        ADD COLUMN IF NOT EXISTS supabase_user_id UUID UNIQUE;
+      `;
+
+      // Create roles and user_roles tables
+      try {
+        await supabase.rpc('exec_sql', { sql: addSupabaseUserIdSQL });
+        await supabase.rpc('exec_sql', { sql: createRolesSQL });
+        await supabase.rpc('exec_sql', { sql: createUserRolesSQL });
+      } catch (sqlError) {
+        console.log('SQL execution may not be supported, trying direct table operations...');
+      }
 
       // Initialize default roles
       const defaultRoles = [
@@ -191,18 +212,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, fullName, role = 'FAE', supabaseUserId } = req.body;
       console.log("Creating employee record:", email);
 
-      // Create employee record with correct column names
+      // Update existing employee record to link with Supabase user
+      // First check if employee exists
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (!existingEmployee) {
+        return res.status(404).json({ error: 'Employee not found with this email' });
+      }
+
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
-        .insert({
-          email,
-          fullName: fullName || `User - ${role}`,
-          role,
-          department: role === 'FAE' ? 'Field Operations' : 'Administration',
-          phone: '+1234567890',
-          status: 'active',
-          supabaseUserId: supabaseUserId
+        .update({
+          supabase_user_id: supabaseUserId
         })
+        .eq('email', email)
         .select()
         .single();
 
@@ -343,39 +370,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (data.user) {
-        // Get user roles
-        const { data: rolesData } = await supabase
-          .from('user_roles')
-          .select(`
-            roles (
-              name,
-              permissions
-            )
-          `)
-          .eq('user_id', data.user.id);
+        // Get employee data by matching email from existing employees table
+        const { data: employeeData } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('email', data.user.email)
+          .single();
 
-        const roles = rolesData?.map((item: any) => item.roles.name) || [];
-
-        // Get employee data if user has FAE/ADMIN role
-        let employee = null;
-        if (roles.includes('FAE') || roles.includes('ADMIN')) {
-          const { data: employeeData } = await supabase
-            .from('employees')
-            .select('*')
-            .eq('supabase_user_id', data.user.id)
-            .single();
-          
-          employee = employeeData;
+        // Determine roles based on employee data
+        let roles = [];
+        if (employeeData) {
+          roles = [employeeData.role]; // Use the role from employees table
         }
 
         const userWithRoles = {
           id: data.user.id,
           email: data.user.email,
           roles,
-          employee
+          employee: employeeData
         };
 
         console.log("User authenticated with roles:", roles);
+        console.log("Employee data:", employeeData?.fullnames, employeeData?.role);
 
         // Create JWT token with role information
         const token = jwt.sign(
@@ -383,6 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: userWithRoles.id, 
             email: userWithRoles.email, 
             roles: userWithRoles.roles,
+            employee: employeeData,
             type: 'supabase' 
           },
           JWT_SECRET,
