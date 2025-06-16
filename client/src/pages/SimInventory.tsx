@@ -503,103 +503,88 @@ export function SimInventory() {
         {/* Search and Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search by SIM number, phone number, or carrier..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search transactions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
-                    <SelectItem value="damaged">Damaged</SelectItem>
-                    <SelectItem value="lost">Lost</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </div>
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full sm:w-[180px]"
+                placeholder="Filter by date"
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* SIM Cards Table */}
+        {/* Transaction History */}
         <Card>
           <CardHeader>
-            <CardTitle>SIM Card Inventory ({filteredCards.length})</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Transaction History</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''}
+                </Badge>
+                {collectionsLoading && <Clock className="w-4 h-4 animate-spin" />}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Loading SIM cards...</div>
-            ) : filteredCards.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Smartphone className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p>No SIM cards found</p>
-                <p className="text-sm">Add your first SIM card to get started</p>
+            {filteredRecords.length === 0 ? (
+              <div className="text-center py-8">
+                <Smartphone className="mx-auto w-12 h-12 text-gray-400 mb-4" />
+                <p className="text-gray-600">No transactions found</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {collectionsLoading ? "Loading..." : searchTerm || dateFilter ? "Try adjusting your filters" : "Record your first SIM transaction to get started"}
+                </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>SIM Number</TableHead>
-                    <TableHead>Phone Number</TableHead>
-                    <TableHead>Carrier</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCards.map((card: SimCard) => (
-                    <TableRow key={card.id}>
-                      <TableCell className="font-medium">{card.simNumber}</TableCell>
-                      <TableCell>{card.phoneNumber}</TableCell>
-                      <TableCell>{card.carrier}</TableCell>
-                      <TableCell>{getStatusBadge(card.status)}</TableCell>
-                      <TableCell>
-                        {card.assignedTo ? (
-                          <span className="text-sm text-gray-600">
-                            {profiles.find((p: any) => p.id === card.assignedTo)?.full_name || card.assignedTo}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {card.teamId ? (
-                          <span className="text-sm text-gray-600">
-                            {teams.find((t: any) => t.id.toString() === card.teamId)?.name || card.teamId}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEdit(card)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Source/Allocation</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead>Created</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRecords.map((record: any) => (
+                      <TableRow key={record.id}>
+                        <TableCell>{format(new Date(record.date), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>{getTransactionTypeBadge(record)}</TableCell>
+                        <TableCell className="font-semibold">
+                          <span className={record.source ? 'text-green-600' : 'text-red-600'}>
+                            {record.source ? '+' : '-'}{record.quantity}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {record.source || record.allocation_type}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {record.source_details || record.allocation_details}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {format(new Date(record.created_at), 'MMM dd, HH:mm')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

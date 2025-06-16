@@ -194,6 +194,19 @@ export const salesMetrics = pgTable("sales_metrics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// SIM Collection and Allocation tracking
+export const simCollection = pgTable("sim_collection", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(),
+  quantity: integer("quantity").notNull(),
+  source: text("source"), // For collection: Vendor, Customer, Red Shop, ASM, MD
+  sourceDetails: text("source_details"), // Details about collection source
+  allocationType: text("allocation_type"), // For allocation: Return to Vendor, Sold to Customer, Transfer to Others
+  allocationDetails: text("allocation_details"), // Details about allocation
+  useremail: text("useremail").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
@@ -207,6 +220,7 @@ export const insertActivityPlannerSchema = createInsertSchema(activityPlanner).o
 export const insertOkrTargetSchema = createInsertSchema(okrTargets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOkrActualSchema = createInsertSchema(okrActuals).omit({ id: true, createdAt: true, updatedAt: true, recordedAt: true });
 export const insertSalesMetricSchema = createInsertSchema(salesMetrics).omit({ id: true, createdAt: true });
+export const insertSimCollectionSchema = createInsertSchema(simCollection).omit({ id: true, createdAt: true });
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -255,5 +269,7 @@ export type OkrActual = typeof okrActuals.$inferSelect;
 export type InsertOkrActual = z.infer<typeof insertOkrActualSchema>;
 export type SalesMetric = typeof salesMetrics.$inferSelect;
 export type InsertSalesMetric = z.infer<typeof insertSalesMetricSchema>;
+export type SimCollection = typeof simCollection.$inferSelect;
+export type InsertSimCollection = z.infer<typeof insertSimCollectionSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
 export type CanvasserRegistration = z.infer<typeof canvasserRegistrationSchema>;
