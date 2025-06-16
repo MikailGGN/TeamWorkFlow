@@ -8,14 +8,17 @@ import {
   BarChart2, Smartphone, CalendarDays, MapPin, Camera, CheckCircle2
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
+import { useSession } from "@/lib/SessionContext";
 
 export function LandingPage() {
   const [, setLocation] = useLocation();
+  const { username, userRole, clearSession, isAuthenticated } = useSession();
   const user = authManager.getUser();
 
   const handleSignOut = () => {
+    clearSession();
     authManager.signOut();
-    window.location.href = "/";
+    setLocation("/");
   };
 
   // If user is authenticated and is FAE, show FAE dashboard

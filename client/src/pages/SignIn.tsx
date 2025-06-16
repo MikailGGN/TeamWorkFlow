@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BarChart3, Shield, Users, Target, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useSession } from "@/lib/SessionContext";
 import marbleDeeImage from "@assets/Marbledee-IWD2025_1749987380484.png";
 import hawkerImage from "@assets/hawker_1749987409718.jpg";
 
@@ -58,6 +59,14 @@ export function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
+  const { setSession, isAuthenticated } = useSession();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/dashboard");
+    }
+  }, [isAuthenticated, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +75,19 @@ export function SignIn() {
     const result = await authManager.signIn(email, password);
     
     if (result.success) {
+      // Set session data using centralized session management
+      setSession(
+        result.user?.name || result.user?.email || email,
+        result.user?.id || "unknown",
+        result.user?.role || "user"
+      );
+
+      // Save additional data to localStorage if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("lastEmail", email);
+      }
+
       // Redirect based on user role and redirectTo response
       const redirectPath = result.redirectTo || "/dashboard";
       setLocation(redirectPath);
@@ -83,6 +105,17 @@ export function SignIn() {
     
     setLoading(false);
   };
+
+  // Load remembered email on component mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("lastEmail");
+    const rememberMeStatus = localStorage.getItem("rememberMe");
+    
+    if (rememberMeStatus === "true" && rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-blue-900 to-purple-900 flex">
