@@ -23,6 +23,9 @@ import CameraDemo from "@/pages/CameraDemo";
 import TimeTracking from "@/pages/TimeTracking";
 import DailyPerformance from "@/pages/DailyPerformance";
 import FAEReporting from "@/pages/FAEReporting";
+import { SimInventory } from "@/pages/SimInventory";
+import { ActivityPlanner } from "@/pages/ActivityPlanner";
+import { LandingPage } from "@/pages/LandingPage";
 import NotFound from "@/pages/not-found";
 import { authManager } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -62,7 +65,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={SignIn} />
+      <Route path="/" component={LandingPage} />
       <Route path="/signin" component={SignIn} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
@@ -88,6 +91,8 @@ function Router() {
       <Route path="/time-tracking" component={() => <ProtectedRoute component={TimeTracking} />} />
       <Route path="/daily-performance" component={() => <ProtectedRoute component={DailyPerformance} />} />
       <Route path="/fae-reporting" component={() => <ProtectedRoute component={FAEReporting} />} />
+      <Route path="/sim-inventory" component={() => <ProtectedRoute component={SimInventory} />} />
+      <Route path="/activity-planner" component={() => <ProtectedRoute component={ActivityPlanner} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route path="/GadsReporting" component={() => <ProtectedRoute component={GadsReporting} />} />
       <Route component={NotFound} />
