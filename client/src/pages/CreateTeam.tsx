@@ -83,6 +83,11 @@ export default function CreateTeam() {
     kitId: ""
   });
 
+  // KIT ID management state
+  const [kitIds, setKitIds] = useState<string[]>([]);
+  const [newKitId, setNewKitId] = useState<string>("");
+  const [showKitDialog, setShowKitDialog] = useState(false);
+
   // Team location state for ID generation
   const [teamLocation, setTeamLocation] = useState<{lat: number, lng: number} | null>(null);
 
@@ -454,6 +459,48 @@ export default function CreateTeam() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // KIT ID management handlers
+  const handleAddKitId = () => {
+    if (!newKitId.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid KIT ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (kitIds.includes(newKitId.trim())) {
+      toast({
+        title: "Duplicate KIT ID",
+        description: "This KIT ID has already been added.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setKitIds(prev => [...prev, newKitId.trim()]);
+    setNewKitId("");
+    toast({
+      title: "KIT ID Added",
+      description: `KIT ID ${newKitId.trim()} has been added successfully.`,
+    });
+  };
+
+  const handleRemoveKitId = (kitIdToRemove: string) => {
+    setKitIds(prev => prev.filter(id => id !== kitIdToRemove));
+    toast({
+      title: "KIT ID Removed",
+      description: `KIT ID ${kitIdToRemove} has been removed.`,
+    });
+  };
+
+  const validateKitIdFormat = (kitId: string) => {
+    // KIT ID format validation (e.g., alphanumeric, specific length)
+    const kitIdRegex = /^[A-Z0-9]{6,12}$/;
+    return kitIdRegex.test(kitId);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -667,6 +714,95 @@ export default function CreateTeam() {
                           )}
                         </div>
                       )}
+                    </div>
+
+                    {/* KIT ID Management Section */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">
+                        Equipment KIT IDs
+                      </Label>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Add and manage equipment KIT IDs for this team
+                      </p>
+                      
+                      <div className="mt-3 space-y-3">
+                        {/* Add KIT ID Input */}
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            value={newKitId}
+                            onChange={(e) => setNewKitId(e.target.value.toUpperCase())}
+                            placeholder="Enter KIT ID (e.g., KIT123456)"
+                            className="flex-1"
+                            maxLength={12}
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleAddKitId}
+                            disabled={!newKitId.trim() || !validateKitIdFormat(newKitId)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add KIT ID
+                          </Button>
+                        </div>
+
+                        {/* KIT ID Format Guide */}
+                        <div className="text-xs text-gray-500">
+                          Format: 6-12 characters (letters and numbers only)
+                        </div>
+
+                        {/* Current KIT IDs List */}
+                        {kitIds.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="text-sm font-medium text-gray-700">
+                              Current KIT IDs ({kitIds.length}):
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {kitIds.map((kitId, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                      {kitId}
+                                    </Badge>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleRemoveKitId(kitId)}
+                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {kitIds.length === 0 && (
+                          <div className="text-center py-6 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                            <Target className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No KIT IDs added yet</p>
+                            <p className="text-xs">Add equipment KIT IDs to assign to team members</p>
+                          </div>
+                        )}
+
+                        {/* KIT ID Usage Instructions */}
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <h4 className="text-sm font-medium text-blue-900 mb-1">KIT ID Guidelines</h4>
+                          <ul className="text-xs text-blue-700 space-y-1">
+                            <li>• Each KIT ID represents physical equipment assigned to team</li>
+                            <li>• KIT IDs can be distributed among team canvassers</li>
+                            <li>• Track equipment usage and accountability through KIT IDs</li>
+                            <li>• Ensure KIT IDs are unique and properly formatted</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
