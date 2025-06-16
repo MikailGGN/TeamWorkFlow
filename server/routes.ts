@@ -173,72 +173,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create test user in Supabase auth
-  app.post("/api/setup/create-user", async (req, res) => {
+  // Create employee record for manual Supabase user signup
+  app.post("/api/setup/create-employee", async (req, res) => {
     try {
       if (!supabase) {
         return res.status(500).json({ error: 'Supabase client not available' });
       }
 
-      const { email, password, role = 'FAE' } = req.body;
-      console.log("Creating test user:", email);
-
-      // Create user in Supabase auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true
-      });
-
-      if (authError) {
-        console.error('Error creating auth user:', authError);
-        return res.status(400).json({ error: authError.message });
-      }
+      const { email, fullName, role = 'FAE', supabaseUserId } = req.body;
+      console.log("Creating employee record:", email);
 
       // Create employee record
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
         .insert({
           email,
-          full_name: `Test User - ${role}`,
+          full_name: fullName || `User - ${role}`,
           role,
           department: role === 'FAE' ? 'Field Operations' : 'Administration',
           phone: '+1234567890',
           status: 'active',
-          supabase_user_id: authData.user.id
+          supabase_user_id: supabaseUserId
         })
         .select()
         .single();
 
       if (employeeError) {
         console.error('Error creating employee:', employeeError);
+        return res.status(400).json({ error: employeeError.message });
       }
 
-      // Assign role to user
-      const { data: roleData } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', role)
-        .single();
+      // Assign role to user if supabaseUserId provided
+      if (supabaseUserId) {
+        const { data: roleData } = await supabase
+          .from('roles')
+          .select('id')
+          .eq('name', role)
+          .single();
 
-      if (roleData) {
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role_id: roleData.id
-          });
+        if (roleData) {
+          await supabase
+            .from('user_roles')
+            .insert({
+              user_id: supabaseUserId,
+              role_id: roleData.id
+            });
+        }
       }
 
       res.json({
-        message: 'User created successfully',
-        user: authData.user,
+        message: 'Employee record created successfully',
         employee: employeeData,
         role
       });
     } catch (error) {
-      console.error('Error creating user:', error);
-      res.status(500).json({ error: 'Failed to create user' });
+      console.error('Error creating employee:', error);
+      res.status(500).json({ error: 'Failed to create employee' });
+    }
+  });
+
+  // Simple user registration that works with Supabase auth
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: 'Supabase client not available' });
+      }
+
+      // Log request body to debug validation issue
+      console.log("Register request body:", req.body);
+      
+      const { email, password, fullName, role = 'FAE' } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
+      
+      console.log("Registering user:", email);
+
+      // Sign up user with Supabase auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Supabase signup error:', error);
+        return res.status(400).json({ error: error.message });
+      }
+
+      // If user is created immediately (email confirmation disabled)
+      if (data.user && !data.user.email_confirmed_at) {
+        // Create employee record
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .insert({
+            email,
+            full_name: fullName || `User - ${role}`,
+            role,
+            department: role === 'FAE' ? 'Field Operations' : 'Administration',
+            phone: '+1234567890',
+            status: 'active',
+            supabase_user_id: data.user.id
+          })
+          .select()
+          .single();
+
+        // Assign role to user
+        const { data: roleData } = await supabase
+          .from('roles')
+          .select('id')
+          .eq('name', role)
+          .single();
+
+        if (roleData) {
+          await supabase
+            .from('user_roles')
+            .insert({
+              user_id: data.user.id,
+              role_id: roleData.id
+            });
+        }
+      }
+
+      res.json({
+        message: 'User registration initiated',
+        user: data.user,
+        session: data.session,
+        needsConfirmation: !data.session
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: 'Failed to register user' });
     }
   });
 
@@ -526,43 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        return res.status(409).json({ message: "User already exists" });
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-
-      const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      res.status(201).json({
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
-        }
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Invalid request data" });
-    }
-  });
+  // Duplicate route removed - using Supabase registration above
 
   // Protected routes
   app.get("/api/user/profile", authenticateToken, async (req: AuthRequest, res) => {
