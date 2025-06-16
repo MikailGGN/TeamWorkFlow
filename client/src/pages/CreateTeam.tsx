@@ -28,8 +28,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { InsertTeam, Profile, CanvasserRegistration } from "@shared/schema";
 import { EnhancedCamera } from '@/components/EnhancedCamera';
-import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+
 
 interface TeamFormData {
   name: string;
@@ -39,33 +38,9 @@ interface TeamFormData {
   channels: string[];
   kitId: string;
 }
-import L from 'leaflet';
 
-// Fix leaflet icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
 
-// Map click handler component
-function LocationPicker({ position, setPosition }: { 
-  position: [number, number] | null; 
-  setPosition: (pos: [number, number] | null) => void;
-}) {
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-    },
-  });
 
-  return position === null ? null : (
-    <Marker position={position}>
-      <Popup>Selected location</Popup>
-    </Marker>
-  );
-}
 
 export default function CreateTeam() {
   const [, setLocation] = useLocation();
@@ -362,7 +337,7 @@ export default function CreateTeam() {
       id: `canvasser_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: Date.now(),
       status: 'pending',
-      faeEmail: currentUser?.email || 'unknown@fae.com', // Include FAE email
+      faeEmail: (currentUser as any)?.email || 'unknown@fae.com', // Include FAE email
       teamName: 'Pending Assignment', // No team selected yet
       teamId: '', // Will be assigned during approval
 
@@ -924,7 +899,7 @@ export default function CreateTeam() {
                                 size="sm"
                                 onClick={() => {
                                   setPhotoPreview(null);
-                                  setCanvasserForm(prev => ({ ...prev, photo: null }));
+                                  setCanvasserForm(prev => ({ ...prev, photo: undefined }));
                                 }}
                               >
                                 <X className="w-3 h-3 mr-1" />
