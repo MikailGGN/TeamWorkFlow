@@ -51,27 +51,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Login attempt for:", req.body?.email);
       const { email, password } = signInSchema.parse(req.body);
       
-      // Check for FAE employees in simulated public.employees table
-      const demoEmployees = [
-        {
-          id: 'fae-001',
-          email: 'fae@company.com',
-          fullName: 'John Doe - Field Area Executive',
-          role: 'FAE',
-          status: 'active'
-        },
-        {
-          id: 'admin-001', 
-          email: 'admin@company.com',
-          fullName: 'Jane Smith - Administrator',
-          role: 'ADMIN',
-          status: 'active'
-        }
-      ];
-
-      const employee = demoEmployees.find(emp => emp.email === email && emp.status === 'active');
-      if (employee) {
-        console.log("FAE Employee authenticated:", employee.email, employee.role);
+      // Check for employees in Supabase employees table
+      const employee = await supabaseStorage.getEmployeeByEmail(email);
+      if (employee && employee.status === 'active') {
+        console.log("Employee authenticated:", employee.email, employee.role);
         
         const token = jwt.sign(
           { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
@@ -87,8 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: employee.fullName,
             role: employee.role,
             type: 'employee'
-          },
-
+          }
         });
       }
 
