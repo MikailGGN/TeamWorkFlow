@@ -75,11 +75,14 @@ export function SignIn() {
     const result = await authManager.signIn(email, password);
     
     if (result.success) {
+      // Get user data from auth manager after successful login
+      const authenticatedUser = authManager.getUser();
+      
       // Set session data using centralized session management
       setSession(
-        result.user?.name || result.user?.email || email,
-        result.user?.id || "unknown",
-        result.user?.role || "user"
+        authenticatedUser?.name || authenticatedUser?.email || email,
+        authenticatedUser?.id?.toString() || "unknown",
+        authenticatedUser?.role || "user"
       );
 
       // Save additional data to localStorage if remember me is checked

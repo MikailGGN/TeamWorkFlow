@@ -22,7 +22,7 @@ export function LandingPage() {
   };
 
   // If user is authenticated and is FAE, show FAE dashboard
-  if (user && user.role === "FAE") {
+  if ((user && user.role === "FAE") || userRole === "FAE") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         {/* Header */}
@@ -40,7 +40,7 @@ export function LandingPage() {
               </div>
               <div className="flex items-center gap-4">
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  {user.email}
+                  {username || (user ? user.email : "User")}
                 </Badge>
                 <Button
                   onClick={handleSignOut}

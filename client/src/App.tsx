@@ -57,7 +57,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }
 
   if (!isAuthenticated) {
-    return <SignIn />;
+    // Redirect to signin page instead of rendering SignIn component directly
+    window.location.href = '/signin';
+    return null;
   }
 
   return <Component />;
@@ -104,10 +106,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <SessionProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </SessionProvider>
     </QueryClientProvider>
   );
 }
