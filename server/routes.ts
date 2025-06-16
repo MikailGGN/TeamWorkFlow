@@ -1,14 +1,15 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { supabaseStorage } from "./supabase";
 import { signInSchema, insertUserSchema, insertTeamSchema, insertTaskSchema, insertAttendanceSchema } from "@shared/schema";
+import { z } from "zod";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-interface AuthRequest extends Express.Request {
+interface AuthRequest extends Request {
   user?: { id: number; email: string; role: string };
 }
 

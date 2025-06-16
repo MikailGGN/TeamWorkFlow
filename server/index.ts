@@ -51,6 +51,16 @@ app.use((req, res, next) => {
     throw err;
   });
 
+
+
+  // Add explicit API route fallback handler for production
+  if (app.get("env") === "production") {
+    // Handle any unmatched API routes before static serving
+    app.use('/api/*', (req, res) => {
+      res.status(404).json({ error: 'API endpoint not found', path: req.path });
+    });
+  }
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
