@@ -45,29 +45,37 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Test Supabase connection
+  // Test Supabase connection and check table schema
   app.get("/api/test/supabase", async (req, res) => {
     try {
       if (!supabase) {
         return res.status(500).json({ error: 'Supabase client not available' });
       }
 
-      // Test basic connection with a simple query
-      const { data, error } = await supabase.rpc('version');
+      // Test connection by querying tables
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select('*')
+        .limit(1);
 
-      if (error) {
-        console.log('Supabase connection test failed:', error);
-        return res.json({
-          status: 'connection_failed',
-          error: error.message,
-          message: 'Tables may not exist yet - this is normal for first setup'
-        });
-      }
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('roles')
+        .select('*')
+        .limit(1);
 
       res.json({
         status: 'connected',
         message: 'Supabase connection successful',
-        data
+        tables: {
+          employees: {
+            error: employeesError?.message,
+            sample: employeesData?.[0] || 'No data'
+          },
+          roles: {
+            error: rolesError?.message,
+            sample: rolesData?.[0] || 'No data'
+          }
+        }
       });
     } catch (error) {
       res.status(500).json({ 
@@ -183,17 +191,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, fullName, role = 'FAE', supabaseUserId } = req.body;
       console.log("Creating employee record:", email);
 
-      // Create employee record
+      // Create employee record with correct column names
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
         .insert({
           email,
-          full_name: fullName || `User - ${role}`,
+          fullName: fullName || `User - ${role}`,
           role,
           department: role === 'FAE' ? 'Field Operations' : 'Administration',
           phone: '+1234567890',
           status: 'active',
-          supabase_user_id: supabaseUserId
+          supabaseUserId: supabaseUserId
         })
         .select()
         .single();
