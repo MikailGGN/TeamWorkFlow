@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BarChart3, Shield, Users, Target, TrendingUp, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/lib/AuthProvider";
+import { BarChart3, Shield, Users, Target, TrendingUp, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/lib/SessionContext";
 import marbleDeeImage from "@assets/Marbledee-IWD2025_1749987380484.png";
@@ -34,24 +33,24 @@ const FlipCard = ({ image, delay }: { image: string; delay: number }) => {
             className="w-full h-full object-cover rounded-xl"
           />
         </div>
-        <div className="flip-card-back bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center relative overflow-hidden">
+        <div className="flip-card-back bg-gradient-to-br from-orange-600 to-red-600 rounded-xl flex items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="text-center text-white p-4 relative z-10">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
-              <BarChart3 className="w-6 h-6 text-white" />
+              <AlertTriangle className="w-6 h-6 text-white" />
             </div>
-            <p className="text-sm font-bold">FieldForce Pro</p>
-            <p className="text-xs text-blue-100 mt-1">Enterprise Suite</p>
+            <p className="text-sm font-bold">Demo Mode</p>
+            <p className="text-xs text-orange-100 mt-1">Testing Environment</p>
           </div>
           <div className="absolute -top-4 -right-4 w-16 h-16 bg-white/5 rounded-full blur-xl"></div>
-          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-purple-400/20 rounded-full blur-lg"></div>
+          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-orange-400/20 rounded-full blur-lg"></div>
         </div>
       </div>
     </div>
   );
 };
 
-export function SignIn() {
+export function DemoSignIn() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,46 +59,58 @@ export function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
   const { setSession, isAuthenticated } = useSession();
-  const { signIn, user } = useAuth();
 
-  // Redirect if already authenticated with Supabase
+  // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
-      const redirectPath = user.roles.includes('FAE') ? '/create-team' : 
-                          user.roles.includes('ADMIN') ? '/admin-cpanel' : '/dashboard';
-      setLocation(redirectPath);
+    if (isAuthenticated) {
+      setLocation('/dashboard');
     }
-  }, [user, setLocation]);
+  }, [isAuthenticated, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await signIn(email, password);
-      
-      if (error) {
-        toast({
-          title: "Sign in failed",
-          description: error.message || "Please check your credentials and try again.",
-          variant: "destructive",
-        });
-      } else if (data.user) {
-        // Save remember me preferences
-        if (rememberMe) {
-          localStorage.setItem("rememberMe", "true");
-          localStorage.setItem("lastEmail", email);
-        }
+      // Demo authentication - only works on demo page
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in with Supabase authentication.",
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Authentication failed');
       }
-    } catch (error) {
+
+      const data = await response.json();
+      
+      // Store session data
+      setSession(data.user, data.token);
+      
+      // Save remember me preferences
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("lastEmail", email);
+      }
+
       toast({
-        title: "Authentication error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Demo Access Granted",
+        description: "Welcome to the FieldForce Pro demo environment.",
+      });
+
+      // Redirect based on user role
+      const redirectPath = data.user.role === 'FAE' ? '/create-team' : 
+                          data.user.role === 'ADMIN' ? '/admin-cpanel' : '/dashboard';
+      setLocation(redirectPath);
+
+    } catch (error: any) {
+      toast({
+        title: "Demo Sign in failed",
+        description: error.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -118,20 +129,36 @@ export function SignIn() {
     }
   }, []);
 
+  const handleQuickLogin = (demoEmail: string, demoPassword: string = "demo123") => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-blue-900 to-purple-900 flex">
-      {/* Left Side - Brand Section */}
+    <div className="min-h-screen bg-gradient-to-br from-orange-900 via-red-900 to-pink-900 flex">
+      {/* Left Side - Demo Brand Section */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 to-red-600/20"></div>
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="mb-8">
             <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
-              <BarChart3 className="w-8 h-8 text-white" />
+              <AlertTriangle className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold mb-4">FieldForce Pro</h1>
-            <p className="text-xl text-blue-100 mb-8">
-              Advanced Field Operations Management Platform - Empowering teams with intelligent analytics and seamless coordination.
+            <h1 className="text-4xl font-bold mb-4">FieldForce Pro Demo</h1>
+            <p className="text-xl text-orange-100 mb-8">
+              Explore the demo environment with simplified authentication and test data.
             </p>
+            
+            {/* Demo Warning Banner */}
+            <div className="bg-orange-500/20 border border-orange-400/30 rounded-lg p-4 mb-6">
+              <div className="flex items-center space-x-2 mb-2">
+                <AlertTriangle className="w-5 h-5 text-orange-300" />
+                <span className="font-semibold text-orange-100">Demo Environment</span>
+              </div>
+              <p className="text-sm text-orange-200">
+                This is a demonstration environment with mock data. For production access, please use the main signin page.
+              </p>
+            </div>
           </div>
           
           {/* Image Collage */}
@@ -158,7 +185,7 @@ export function SignIn() {
               </div>
               <div>
                 <p className="font-semibold">Team Management</p>
-                <p className="text-sm text-blue-200">Coordinate field operations</p>
+                <p className="text-sm text-orange-200">Demo team operations</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -167,7 +194,7 @@ export function SignIn() {
               </div>
               <div>
                 <p className="font-semibold">Performance Tracking</p>
-                <p className="text-sm text-blue-200">Monitor KPIs and OKRs</p>
+                <p className="text-sm text-orange-200">Sample KPIs and OKRs</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -175,8 +202,8 @@ export function SignIn() {
                 <Shield className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-semibold">Secure Access</p>
-                <p className="text-sm text-blue-200">Enterprise-grade security</p>
+                <p className="font-semibold">Demo Access</p>
+                <p className="text-sm text-orange-200">Simplified authentication</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -184,8 +211,8 @@ export function SignIn() {
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-semibold">Real-time Analytics</p>
-                <p className="text-sm text-blue-200">Live performance insights</p>
+                <p className="font-semibold">Test Analytics</p>
+                <p className="text-sm text-orange-200">Demo data insights</p>
               </div>
             </div>
           </div>
@@ -193,41 +220,41 @@ export function SignIn() {
         
         {/* Decorative Elements */}
         <div className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
-        <div className="absolute bottom-20 left-20 w-24 h-24 bg-purple-400/10 rounded-full blur-lg"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-orange-400/10 rounded-full blur-lg"></div>
       </div>
 
-      {/* Right Side - Sign In Form */}
+      {/* Right Side - Demo Sign In Form */}
       <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-md">
           <Card className="backdrop-blur-sm bg-white/95 border-0 shadow-2xl">
             <CardHeader className="text-center space-y-2 pb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-600 to-red-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Welcome to FieldForce Pro</h2>
-              <p className="text-gray-600">Sign in to your advanced field operations platform</p>
+              <h2 className="text-2xl font-bold text-gray-900">FieldForce Pro Demo</h2>
+              <p className="text-gray-600">Access the demonstration environment</p>
             </CardHeader>
             
             <CardContent className="pt-0">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                    Email Address
+                    Demo Email Address
                   </Label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    className="h-12 px-4 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                    placeholder="Enter demo email address"
+                    className="h-12 px-4 border-gray-300 focus:border-orange-500 focus:ring-orange-500 transition-all duration-200"
                     required
                   />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                    Password
+                    Demo Password
                   </Label>
                   <div className="relative">
                     <Input
@@ -235,8 +262,8 @@ export function SignIn() {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="h-12 px-4 pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+                      placeholder="Enter demo password"
+                      className="h-12 px-4 pr-12 border-gray-300 focus:border-orange-500 focus:ring-orange-500 transition-all duration-200"
                       required
                     />
                     <button
@@ -263,45 +290,78 @@ export function SignIn() {
                   </div>
                   <button 
                     type="button" 
-                    onClick={() => setLocation('/forgot-password')}
+                    onClick={() => setLocation('/signin')}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
                   >
-                    Forgot password?
+                    Production Login
                   </button>
                 </div>
                 
                 <Button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100"
+                  className="w-full h-12 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center space-x-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Signing in...</span>
+                      <span>Accessing Demo...</span>
                     </div>
                   ) : (
-                    "Sign In"
+                    "Access Demo Environment"
                   )}
                 </Button>
               </form>
 
-              {/* Demo Access Link */}
-              <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              {/* Demo Credentials */}
+              <div className="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-200">
                 <div className="flex items-center space-x-2 mb-3">
-                  <Shield className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-sm font-semibold text-blue-700">Looking for Demo Access?</h3>
+                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                  <h3 className="text-sm font-semibold text-orange-700">Demo Credentials</h3>
                 </div>
-                <p className="text-sm text-blue-600 mb-3">
-                  Explore the demonstration environment with test credentials and sample data.
-                </p>
-                <button 
-                  type="button" 
-                  onClick={() => setLocation('/demo')}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
-                >
-                  Access Demo Environment
-                </button>
+                <div className="space-y-3 text-xs">
+                  <div className="flex flex-col space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickLogin('fae@company.com')}
+                      className="flex items-center justify-between p-2 bg-white rounded border hover:bg-orange-50 transition-colors"
+                    >
+                      <span className="text-gray-600 font-medium">Field Area Executive:</span>
+                      <code className="bg-orange-100 px-2 py-1 rounded text-orange-700">fae@company.com</code>
+                    </button>
+                    <p className="text-gray-500 text-xs ml-2">→ Team Creation Dashboard</p>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickLogin('admin@company.com')}
+                      className="flex items-center justify-between p-2 bg-white rounded border hover:bg-orange-50 transition-colors"
+                    >
+                      <span className="text-gray-600 font-medium">System Administrator:</span>
+                      <code className="bg-orange-100 px-2 py-1 rounded text-orange-700">admin@company.com</code>
+                    </button>
+                    <p className="text-gray-500 text-xs ml-2">→ Main Operations Dashboard</p>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickLogin('admin@example.com', 'admin123')}
+                      className="flex items-center justify-between p-2 bg-white rounded border hover:bg-orange-50 transition-colors"
+                    >
+                      <span className="text-gray-600 font-medium">Standard Access:</span>
+                      <code className="bg-orange-100 px-2 py-1 rounded text-orange-700">admin@example.com</code>
+                    </button>
+                    <p className="text-gray-500 text-xs ml-2">Password: admin123</p>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-orange-200">
+                    <p className="text-center text-gray-500 italic">
+                      Employee accounts: simplified authentication (any password)
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

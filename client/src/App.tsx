@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SessionProvider } from "@/lib/SessionContext";
 import { AuthProvider } from "@/lib/AuthProvider";
 import { SignIn } from "@/pages/SignIn";
+import { DemoSignIn } from "@/pages/DemoSignIn";
 import { ForgotPassword } from "@/pages/ForgotPassword";
 import { ResetPassword } from "@/pages/ResetPassword";
 import ReportingDashboard from "@/pages/ReportingDashboard";
@@ -72,6 +73,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/signin" component={SignIn} />
+      <Route path="/demo" component={DemoSignIn} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={ReportingDashboard} />} />
