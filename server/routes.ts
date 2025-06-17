@@ -471,15 +471,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/demo-signin", async (req, res) => {
     try {
       console.log("Demo login attempt for:", req.body?.email);
-      const { email, password } = signInSchema.parse(req.body);
+      console.log("Demo request body:", req.body);
       
-      // Check for demo employees in Supabase employees table
-      const employee = await supabaseStorage.getEmployeeByEmail(email);
-      if (employee && employee.status === 'active') {
-        console.log("Demo employee authenticated:", employee.email, employee.role);
+      const { email, password } = req.body;
+      
+      // Demo credentials - hardcoded for demo environment only
+      const demoAccounts = [
+        { email: 'fae@company.com', password: 'demo123', name: 'John Doe - Field Area Executive', role: 'FAE', id: 'demo-fae-001' },
+        { email: 'admin@company.com', password: 'demo123', name: 'Jane Smith - Administrator', role: 'ADMIN', id: 'demo-admin-001' },
+        { email: 'admin@example.com', password: 'admin123', name: 'Demo User', role: 'ADMIN', id: 'demo-user-001' }
+      ];
+
+      const demoUser = demoAccounts.find(account => 
+        account.email === email && account.password === password
+      );
+
+      if (demoUser) {
+        console.log("Demo user authenticated:", demoUser.email, demoUser.role);
         
         const token = jwt.sign(
-          { id: employee.id, email: employee.email, role: employee.role, type: 'demo_employee' },
+          { id: demoUser.id, email: demoUser.email, role: demoUser.role, type: 'demo_user' },
           JWT_SECRET,
           { expiresIn: '24h' }
         );
@@ -487,42 +498,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({
           token,
           user: {
-            id: employee.id,
-            email: employee.email,
-            name: employee.fullName,
-            role: employee.role,
-            type: 'demo_employee'
+            id: demoUser.id,
+            email: demoUser.email,
+            name: demoUser.name,
+            role: demoUser.role,
+            type: 'demo_user'
           }
         });
       }
 
-      // Fallback to regular user authentication for demo
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(401).json({ message: "Invalid demo credentials" });
-      }
-
-      const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) {
-        return res.status(401).json({ message: "Invalid demo credentials" });
-      }
-
-      const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role, type: 'demo_user' },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      res.json({
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          type: 'demo_user'
-        },
-      });
+      return res.status(401).json({ message: "Invalid demo credentials" });
     } catch (error) {
       console.error("Demo sign in error:", error);
       res.status(400).json({ message: "Invalid demo request", details: error.message });
