@@ -322,7 +322,7 @@ export function SignIn() {
                   <h3 className="text-sm font-semibold text-green-700">Employee Access</h3>
                 </div>
                 <p className="text-sm text-green-600">
-                  Use your company email and password: <code className="bg-green-100 px-1 rounded">employee123</code>
+                  Use your company email and Supabase authentication password to access role-specific dashboards.
                 </p>
               </div>
             </CardContent>

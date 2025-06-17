@@ -528,57 +528,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Production authentication route - uses public.employees table
+  // Production authentication route - uses Supabase Auth + employees table
   app.post("/api/auth/signin", async (req, res) => {
     try {
       console.log("Production login attempt for:", req.body?.email);
       const { email, password } = signInSchema.parse(req.body);
       
-      // Query the employees table to get user role
-      const { data: employee, error } = await supabase
+      if (!supabase) {
+        return res.status(500).json({ message: "Authentication service unavailable" });
+      }
+
+      // Authenticate with Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      if (error) {
+        console.error("Supabase auth error:", error.message);
+        return res.status(401).json({ 
+          message: "Invalid credentials",
+          hint: "Please check your email and password"
+        });
+      }
+
+      if (!data.user) {
+        return res.status(401).json({ 
+          message: "Authentication failed"
+        });
+      }
+
+      // Get employee data from employees table for role-based access
+      const { data: employee, error: employeeError } = await supabase
         .from('employees')
-        .select('id, email, fullnames, role, department, phone, status')
+        .select('id, email, fullnames, role, department, mobile_number, status')
         .eq('email', email)
         .eq('status', 'active')
         .single();
 
-      if (error || !employee) {
+      if (employeeError || !employee) {
+        console.error("Employee lookup error:", employeeError?.message);
         return res.status(401).json({ 
-          message: "Invalid credentials or inactive account",
-          hint: "Please check your email or contact administrator"
+          message: "Employee account not found or inactive",
+          hint: "Please contact administrator"
         });
       }
 
-      // For production, we'll use a simple password check against employee data
-      // In a real system, you'd validate against Supabase Auth or your auth provider
-      if (password === 'employee123') { // Temporary password for testing
-        const token = jwt.sign(
-          { 
-            id: employee.id, 
-            email: employee.email, 
-            role: employee.role, 
-            type: 'employee',
-            department: employee.department 
-          },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
+      // Create JWT token with employee role information
+      const token = jwt.sign(
+        { 
+          id: employee.id, 
+          email: employee.email, 
+          role: employee.role, 
+          type: 'employee',
+          department: employee.department,
+          supabaseUserId: data.user.id
+        },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
 
-        return res.json({
-          token,
-          user: {
-            id: employee.id,
-            email: employee.email,
-            name: employee.fullnames,
-            role: employee.role,
-            department: employee.department,
-            type: 'employee'
-          }
-        });
-      }
-
-      return res.status(401).json({ 
-        message: "Invalid credentials"
+      return res.json({
+        token,
+        user: {
+          id: employee.id,
+          email: employee.email,
+          name: employee.fullnames,
+          role: employee.role,
+          department: employee.department,
+          phone: employee.mobile_number,
+          type: 'employee',
+          supabaseUserId: data.user.id
+        }
       });
 
     } catch (error) {
