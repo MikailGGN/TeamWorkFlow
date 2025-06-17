@@ -645,12 +645,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Protected routes
   app.get("/api/user/profile", authenticateToken, async (req: AuthRequest, res) => {
-    // Handle employee profile requests
-    if (req.user!.id && typeof req.user!.id === 'string' && req.user!.id.startsWith('fae-') || req.user!.id.startsWith('admin-')) {
+    const userId = String(req.user!.id);
+    console.log('Profile request for userId:', userId, 'type:', typeof userId);
+    
+    // Handle demo user profile requests
+    if (userId.startsWith('demo-')) {
+      console.log('Handling demo user profile');
       return res.json({
         id: req.user!.id,
         email: req.user!.email,
-        name: req.user!.id.startsWith('fae-') ? 'John Doe - Field Area Executive' : 'Jane Smith - Administrator',
+        name: userId.includes('fae') ? 'John Doe - Field Area Executive' : 
+              userId.includes('admin') ? 'Jane Smith - Administrator' : 'Demo User',
+        role: req.user!.role,
+        type: 'demo_user'
+      });
+    }
+
+    // Handle employee profile requests
+    if (userId.startsWith('fae-') || userId.startsWith('admin-')) {
+      return res.json({
+        id: req.user!.id,
+        email: req.user!.email,
+        name: userId.startsWith('fae-') ? 'John Doe - Field Area Executive' : 'Jane Smith - Administrator',
         role: req.user!.role,
         type: 'employee'
       });
