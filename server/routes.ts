@@ -24,6 +24,21 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log('Token decoded:', decoded);
+    
+    // Handle demo user authentication
+    if (decoded.type === 'demo_user') {
+      req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+      next();
+      return;
+    }
+    
+    // Handle Supabase authentication
+    if (decoded.type === 'supabase') {
+      req.user = { id: decoded.id, email: decoded.email, role: decoded.roles?.[0] || 'USER' };
+      next();
+      return;
+    }
     
     // Handle employee authentication (FAE, ADMIN)
     if (decoded.type === 'employee') {
@@ -40,6 +55,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
     req.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch (error) {
+    console.error('Token verification error:', error);
     return res.status(401).json({ message: 'Invalid token' });
   }
 };
