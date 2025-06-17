@@ -80,13 +80,39 @@ export class SupabaseStorage {
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
-    const result = await db.insert(employees).values({
-      ...employee,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
-    return result[0];
+    if (!supabase) {
+      throw new Error('Supabase client not available');
+    }
+
+    const { data, error } = await supabase
+      .from('employees')
+      .insert({
+        email: employee.email,
+        fullnames: employee.fullName,
+        role: employee.role,
+        department: employee.department,
+        mobile_number: employee.phone,
+        status: employee.status || 'active'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create employee: ${error.message}`);
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      fullName: data.fullnames,
+      role: data.role,
+      department: data.department,
+      phone: data.mobile_number,
+      status: data.status,
+      supabaseUserId: data.supabase_user_id,
+      createdAt: data.created_at ? new Date(data.created_at) : null,
+      updatedAt: data.updated_at ? new Date(data.updated_at) : null
+    };
   }
 
   async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {

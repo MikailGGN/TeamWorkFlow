@@ -7,22 +7,19 @@ import {
   BarChart3, Users, Target, TrendingUp, LogOut, Clock, UserPlus, 
   BarChart2, Smartphone, CalendarDays, MapPin, Camera, CheckCircle2
 } from "lucide-react";
-import { authManager } from "@/lib/auth";
-import { useSession } from "@/lib/SessionContext";
+import { useAuth } from "@/lib/EmployeeAuthProvider";
 
 export function LandingPage() {
   const [, setLocation] = useLocation();
-  const { username, userRole, clearSession, isAuthenticated } = useSession();
-  const user = authManager.getUser();
+  const { user, signOut } = useAuth();
 
   const handleSignOut = () => {
-    clearSession();
-    authManager.signOut();
+    signOut();
     setLocation("/");
   };
 
   // If user is authenticated and is FAE, show FAE dashboard
-  if ((user && user.role === "FAE") || userRole === "FAE") {
+  if (user && user.role === "FAE") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         {/* Header */}
@@ -40,7 +37,7 @@ export function LandingPage() {
               </div>
               <div className="flex items-center gap-4">
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  {username || (user ? user.email : "User")}
+                  {user ? user.email : "User"}
                 </Badge>
                 <Button
                   onClick={handleSignOut}
