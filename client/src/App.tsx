@@ -3,8 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SessionProvider } from "@/lib/SessionContext";
-import { AuthProvider } from "@/lib/AuthProvider";
+import { EmployeeAuthProvider } from "@/lib/EmployeeAuthProvider";
 import { SignIn } from "@/pages/SignIn";
 import { DemoSignIn } from "@/pages/DemoSignIn";
 import { ForgotPassword } from "@/pages/ForgotPassword";
@@ -31,27 +30,12 @@ import { ActivityPlanner } from "@/pages/ActivityPlanner";
 import CampaignSetup from "@/pages/CampaignSetup";
 import { LandingPage } from "@/pages/LandingPage";
 import NotFound from "@/pages/not-found";
-import { authManager } from "@/lib/auth";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/EmployeeAuthProvider";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const authenticated = authManager.isAuthenticated();
-      setIsAuthenticated(authenticated);
-      setIsChecking(false);
-    };
-
-    checkAuth();
-    // Check periodically in case token expires
-    const interval = setInterval(checkAuth, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (isChecking) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -59,8 +43,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
-  if (!isAuthenticated) {
-    // Redirect to signin page instead of rendering SignIn component directly
+  if (!user) {
     window.location.href = '/signin';
     return null;
   }
@@ -111,14 +94,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SessionProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </SessionProvider>
-      </AuthProvider>
+      <EmployeeAuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </EmployeeAuthProvider>
     </QueryClientProvider>
   );
 }

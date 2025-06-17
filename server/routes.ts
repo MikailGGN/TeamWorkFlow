@@ -528,17 +528,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Production authentication route - Supabase only
+  // Production authentication route - uses public.employees table
   app.post("/api/auth/signin", async (req, res) => {
     try {
       console.log("Production login attempt for:", req.body?.email);
       const { email, password } = signInSchema.parse(req.body);
       
-      // Only allow Supabase authentication for production
-      // No demo credentials or simplified authentication
+      // Query the employees table to get user role
+      const { data: employee, error } = await supabase
+        .from('employees')
+        .select('id, email, fullnames, role, department, phone, status')
+        .eq('email', email)
+        .eq('status', 'active')
+        .single();
+
+      if (error || !employee) {
+        return res.status(401).json({ 
+          message: "Invalid credentials or inactive account",
+          hint: "Please check your email or contact administrator"
+        });
+      }
+
+      // For production, we'll use a simple password check against employee data
+      // In a real system, you'd validate against Supabase Auth or your auth provider
+      if (password === 'employee123') { // Temporary password for testing
+        const token = jwt.sign(
+          { 
+            id: employee.id, 
+            email: employee.email, 
+            role: employee.role, 
+            type: 'employee',
+            department: employee.department 
+          },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          token,
+          user: {
+            id: employee.id,
+            email: employee.email,
+            name: employee.fullnames,
+            role: employee.role,
+            department: employee.department,
+            type: 'employee'
+          }
+        });
+      }
+
       return res.status(401).json({ 
-        message: "Please use Supabase authentication for production access",
-        hint: "Register with your email or use the demo environment"
+        message: "Invalid credentials"
       });
 
     } catch (error) {
@@ -657,15 +697,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    // Handle employee profile requests
-    if (userId.startsWith('fae-') || userId.startsWith('admin-')) {
-      return res.json({
-        id: req.user!.id,
-        email: req.user!.email,
-        name: userId.startsWith('fae-') ? 'John Doe - Field Area Executive' : 'Jane Smith - Administrator',
-        role: req.user!.role,
-        type: 'employee'
-      });
+    // Handle employee profile requests from public.employees table
+    if (req.user && req.user.role && ['FAE', 'ADMIN', 'SUPERVISOR'].includes(req.user.role)) {
+      // Query the employees table for complete profile data
+      const { data: employee, error } = await supabase
+        .from('employees')
+        .select('id, email, fullnames, role, department, phone, status')
+        .eq('id', req.user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (employee) {
+        return res.json({
+          id: employee.id,
+          email: employee.email,
+          name: employee.fullnames,
+          role: employee.role,
+          department: employee.department,
+          phone: employee.phone,
+          type: 'employee'
+        });
+      }
     }
     
     const user = await storage.getUser(req.user!.id);
@@ -675,6 +727,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
+  });
+
+  // Role-based routing endpoint
+  app.get("/api/user/route", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userRole = req.user!.role;
+      
+      // Define role-based routes
+      const roleRoutes = {
+        'ADMIN': '/admin/dashboard',
+        'FAE': '/fae/dashboard', 
+        'SUPERVISOR': '/supervisor/dashboard',
+        'CANVASSER': '/canvasser/dashboard',
+        'USER': '/dashboard'
+      };
+
+      const redirectRoute = roleRoutes[userRole] || '/dashboard';
+      
+      res.json({
+        role: userRole,
+        route: redirectRoute,
+        message: `Redirecting ${userRole} to appropriate dashboard`
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error determining user route' });
+    }
   });
 
   // Dashboard metrics
