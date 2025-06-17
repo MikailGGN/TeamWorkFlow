@@ -73,7 +73,7 @@ export function DemoSignIn() {
 
     try {
       // Demo authentication - only works on demo page
-      const response = await fetch("/api/auth/signin", {
+      const response = await fetch("/api/auth/demo-signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,8 +88,10 @@ export function DemoSignIn() {
 
       const data = await response.json();
       
-      // Store session data
-      setSession(data.user, data.token);
+      // Store session data with proper format
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userEmail", data.user.email);
+      setSession(data.user.name || data.user.email, data.user.id.toString(), data.user.role);
       
       // Save remember me preferences
       if (rememberMe) {

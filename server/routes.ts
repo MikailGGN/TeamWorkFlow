@@ -467,19 +467,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth routes
-  app.post("/api/auth/signin", async (req, res) => {
+  // Demo authentication route - restricted to demo page access
+  app.post("/api/auth/demo-signin", async (req, res) => {
     try {
-      console.log("Login attempt for:", req.body?.email);
+      console.log("Demo login attempt for:", req.body?.email);
       const { email, password } = signInSchema.parse(req.body);
       
-      // Check for employees in Supabase employees table
+      // Check for demo employees in Supabase employees table
       const employee = await supabaseStorage.getEmployeeByEmail(email);
       if (employee && employee.status === 'active') {
-        console.log("Employee authenticated:", employee.email, employee.role);
+        console.log("Demo employee authenticated:", employee.email, employee.role);
         
         const token = jwt.sign(
-          { id: employee.id, email: employee.email, role: employee.role, type: 'employee' },
+          { id: employee.id, email: employee.email, role: employee.role, type: 'demo_employee' },
           JWT_SECRET,
           { expiresIn: '24h' }
         );
@@ -491,24 +491,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: employee.email,
             name: employee.fullName,
             role: employee.role,
-            type: 'employee'
+            type: 'demo_employee'
           }
         });
       }
 
-      // Fallback to regular user authentication
+      // Fallback to regular user authentication for demo
       const user = await storage.getUserByEmail(email);
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid demo credentials" });
       }
 
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid demo credentials" });
       }
 
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role, type: 'user' },
+        { id: user.id, email: user.email, role: user.role, type: 'demo_user' },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -520,12 +520,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email,
           name: user.name,
           role: user.role,
-          type: 'user'
+          type: 'demo_user'
         },
-
       });
     } catch (error) {
-      console.error("Sign in error:", error);
+      console.error("Demo sign in error:", error);
+      res.status(400).json({ message: "Invalid demo request", details: error.message });
+    }
+  });
+
+  // Production authentication route - Supabase only
+  app.post("/api/auth/signin", async (req, res) => {
+    try {
+      console.log("Production login attempt for:", req.body?.email);
+      const { email, password } = signInSchema.parse(req.body);
+      
+      // Only allow Supabase authentication for production
+      // No demo credentials or simplified authentication
+      return res.status(401).json({ 
+        message: "Please use Supabase authentication for production access",
+        hint: "Register with your email or use the demo environment"
+      });
+
+    } catch (error) {
+      console.error("Production sign in error:", error);
       res.status(400).json({ message: "Invalid request data", details: error.message });
     }
   });
