@@ -24,7 +24,6 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    console.log('Token decoded:', decoded);
     
     // Handle demo user authentication
     if (decoded.type === 'demo_user') {
@@ -55,7 +54,6 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: any) => 
     req.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch (error) {
-    console.error('Token verification error:', error);
     return res.status(401).json({ message: 'Invalid token' });
   }
 };
@@ -646,11 +644,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Protected routes
   app.get("/api/user/profile", authenticateToken, async (req: AuthRequest, res) => {
     const userId = String(req.user!.id);
-    console.log('Profile request for userId:', userId, 'type:', typeof userId);
     
     // Handle demo user profile requests
     if (userId.startsWith('demo-')) {
-      console.log('Handling demo user profile');
       return res.json({
         id: req.user!.id,
         email: req.user!.email,
