@@ -756,9 +756,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userRole = req.user!.role;
       
       // Define role-based routes
-      const roleRoutes = {
+      const roleRoutes: { [key: string]: string } = {
         'ADMIN': '/admin/dashboard',
-        'FAE': '/fae/dashboard', 
+        'FAE': '/', 
         'SUPERVISOR': '/supervisor/dashboard',
         'CANVASSER': '/canvasser/dashboard',
         'USER': '/dashboard'
